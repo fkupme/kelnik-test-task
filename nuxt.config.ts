@@ -1,6 +1,34 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
-  modules: ['@nuxt/fonts', '@nuxt/icon']
-})
+	compatibilityDate: '2025-07-15',
+	devtools: { enabled: true },
+
+	modules: ['@pinia/nuxt', '@nuxt/fonts', '@nuxt/icon', '@vueuse/nuxt'],
+
+	ssr: false,
+
+	css: ['~/assets/scss/main.scss'],
+
+	vite: {
+		css: {
+			preprocessorOptions: {
+				scss: {
+					additionalData: '@use "~/assets/scss/variables" as *;',
+				},
+			},
+		},
+	},
+
+	nitro: {
+		publicAssets: [
+			{
+				baseURL: '/data',
+				dir: 'data',
+			},
+		],
+	},
+
+	typescript: {
+		typeCheck: false,
+	},
+});
