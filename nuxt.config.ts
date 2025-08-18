@@ -19,15 +19,6 @@ export default defineNuxtConfig({
 		},
 	},
 
-	nitro: {
-		publicAssets: [
-			{
-				baseURL: '/data',
-				dir: 'data',
-			},
-		],
-	},
-
 	typescript: {
 		typeCheck: false,
 	},

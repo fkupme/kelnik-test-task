@@ -41,7 +41,7 @@ export const useApartmentsStore = defineStore('apartments', () => {
 			await new Promise(resolve => setTimeout(resolve, 500));
 
 			const response = await $fetch<{ apartments: Apartment[] }>(
-				'/data/apartments.json'
+				'/apartments.json'
 			);
 			apartments.value = response.apartments;
 
