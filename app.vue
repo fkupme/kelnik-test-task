@@ -3,7 +3,6 @@
 </template>
 
 <script setup lang="ts">
-// Начальная загрузка перенесена в pages/index.vue во избежание двойного reset.
 </script>
 
 <style lang="scss">

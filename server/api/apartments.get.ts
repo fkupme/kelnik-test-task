@@ -21,14 +21,12 @@ function loadAll(): Apartment[] {
 }
 
 export default defineEventHandler((event: H3Event) => {
-	// getQuery уже возвращает объект query-параметров; прежний код деструктурировал { query } и терял их
 	const query = getQuery(event) as Record<string, string>;
 	const offset = parseInt(query.offset || '0', 10);
 	const limit = Math.min(parseInt(query.limit || '10', 10), 100);
 	const sortField = query.sortField || '';
 	const sortDir = (query.sortDir === 'desc' ? 'desc' : 'asc') as 'asc' | 'desc';
 
-	// Filters
 	const rooms = (query.rooms || '')
 		.split(',')
 		.map(v => parseInt(v, 10))
@@ -41,7 +39,6 @@ export default defineEventHandler((event: H3Event) => {
 
 	let all = loadAll();
 
-	// Global ranges
 	const prices = all.map(a => a.price);
 	const areas = all.map(a => a.area);
 	const globalPriceMin = Math.min(...prices);
@@ -49,7 +46,6 @@ export default defineEventHandler((event: H3Event) => {
 	const globalAreaMin = Math.min(...areas);
 	const globalAreaMax = Math.max(...areas);
 
-	// Apply filters
 	all = all.filter(a => {
 		if (rooms.length && !rooms.includes(a.rooms)) return false;
 		if (
@@ -65,7 +61,6 @@ export default defineEventHandler((event: H3Event) => {
 		return true;
 	});
 
-	// Sort
 	if (sortField) {
 		all.sort((a: any, b: any) => {
 			let av: any;

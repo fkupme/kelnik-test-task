@@ -1,349 +1,518 @@
 import { defineStore } from 'pinia';
+import { computed, nextTick, reactive, readonly, ref } from 'vue';
 import type { Apartment, FilterState, PaginationState } from '~/types';
 
-export const useApartmentsStore = defineStore('apartments', () => {
-	const entities = reactive<Record<string, Apartment>>({});
-	const currentIds = ref<string[]>([]);
-	const apartments = computed<Apartment[]>(() =>
-		currentIds.value.map(id => entities[id]).filter((x): x is Apartment => !!x)
-	);
+interface ApartmentHash {
+  id: string;
+  hash: string;
+  apartment: Apartment;
+}
 
-	const appliedFilters = reactive<FilterState>({
-		rooms: [],
-		priceRange: [5500000, 18900000],
-		areaRange: [33, 123],
-	});
-	const draftFilters = reactive<FilterState>({
-		rooms: [],
-		priceRange: [5500000, 18900000],
-		areaRange: [33, 123],
-	});
+interface ApartmentStorageState {
+  hashMap: Map<string, ApartmentHash>;
+  rawData: Apartment[]; 
+  filteredIds: Set<string>; 
+  lastFilterHash: string;
+}
 
-	const sort = ref({
-		field: '',
-		direction: 'asc' as 'asc' | 'desc',
-	});
+export const useApartmentsStore = defineStore(
+  'apartments',
+  () => {
+    const storageState = reactive<ApartmentStorageState>({
+      hashMap: new Map(),
+      rawData: [],
+      filteredIds: new Set(),
+      lastFilterHash: '',
+    });
 
-	const pagination = ref<PaginationState>({
-		currentPage: 0,
-		itemsPerPage: 5,
-		totalItems: 0,
-		hasMore: true,
-	});
+    const fullyLoadedRooms = reactive<Set<number>>(new Set());
 
-	const priceRange = ref<[number, number]>([5500000, 18900000]);
-	const areaRange = ref<[number, number]>([33, 123]);
+    const appliedFilters = reactive<FilterState>({
+      rooms: [],
+      priceRange: [5500000, 18900000],
+      areaRange: [33, 123],
+    });
 
-	const isLoading = ref(false);
-	const isAppending = ref(false);
-	const isFiltering = ref(false);
-	const error = ref<string | null>(null);
+    const draftFilters = reactive<FilterState>({
+      rooms: [],
+      priceRange: [5500000, 18900000],
+      areaRange: [33, 123],
+    });
 
-	// Геттер: клиентская фильтрация по appliedFilters поверх накопленного супермножества
-	const matchesFilters = (apt: Apartment, f: FilterState) => {
-		if (f.rooms.length && !f.rooms.includes(apt.rooms)) return false;
-		if (apt.price < f.priceRange[0] || apt.price > f.priceRange[1])
-			return false;
-		if (apt.area < f.areaRange[0] || apt.area > f.areaRange[1]) return false;
-		return true;
-	};
+    const sort = ref({
+      field: '',
+      direction: 'asc' as 'asc' | 'desc',
+    });
 
-	const filteredIds = computed(() =>
-		currentIds.value.filter(id => {
-			const apt = entities[id];
-			return apt ? matchesFilters(apt, appliedFilters) : false;
-		})
-	);
+    const pagination = ref<PaginationState>({
+      currentPage: 0,
+      itemsPerPage: 5,
+      totalItems: 0,
+      hasMore: true,
+    });
 
-	const visibleApartments = computed<Apartment[]>(() => {
-		let arr: (Apartment | undefined)[] = filteredIds.value.map(
-			id => entities[id]
-		);
-		if (sort.value.field) {
-			const field = sort.value.field as keyof Apartment;
-			const dir = sort.value.direction === 'asc' ? 1 : -1;
-			arr = [...arr].sort((a: any, b: any) => {
-				const av = a?.[field];
-				const bv = b?.[field];
-				if (av === bv) return 0;
-				return av > bv ? dir : -dir;
-			});
-		}
-		return arr.filter((x): x is Apartment => !!x);
-	});
+    const priceRange = ref<[number, number]>([5500000, 18900000]);
+    const areaRange = ref<[number, number]>([33, 123]);
 
-	const querySignature = computed(
-		() =>
-			`r:${[...appliedFilters.rooms].sort().join(',')}|p:${
-				appliedFilters.priceRange[0]
-			}-${appliedFilters.priceRange[1]}|a:${appliedFilters.areaRange[0]}-${
-				appliedFilters.areaRange[1]
-			}|s:${sort.value.field}:${sort.value.direction}`
-	);
+    const isLoading = ref(false);
+    const isAppending = ref(false);
+    const isFiltering = ref(false);
+    const error = ref<string | null>(null);
+    const initialized = ref(false);
 
-	type CacheEntry = {
-		pages: Map<number, Apartment[]>;
-		total: number;
-		priceRange?: [number, number];
-		areaRange?: [number, number];
-		complete: boolean;
-	};
-	const cache = reactive<Map<string, CacheEntry>>(new Map());
+    const toBase64 = (str: string): string => {
+      try {
+        return btoa(str); 
+      } catch {
+        if (typeof window === 'undefined') {
+          return Buffer.from(str, 'utf-8').toString('base64');
+        }
+        const utf8 = encodeURIComponent(str).replace(
+          /%([0-9A-F]{2})/g,
+          (_, p1) => String.fromCharCode(parseInt(p1, 16))
+        );
+        return btoa(utf8);
+      }
+    };
+    const createApartmentHash = (apartment: Apartment): string => {
+      const data = `${apartment.id}|${apartment.name}|${apartment.area}|${apartment.floor}|${apartment.price}|${apartment.rooms}`;
+    };
 
-	const lastLoadedSignature = ref<string | null>(null);
-	const lastLoadedTotal = ref<number>(0);
+    const createFilterHash = (
+      filters: FilterState,
+      sortField: string,
+      sortDirection: string
+    ): string => {
+      const roomsStr = [...filters.rooms].sort().join(',');
+      const data = `r:${roomsStr}|p:${filters.priceRange[0]}-${filters.priceRange[1]}|a:${filters.areaRange[0]}-${filters.areaRange[1]}|s:${sortField}:${sortDirection}`;
+      return toBase64(data).replace(/[+/=]/g, '');
+    };
 
-	const activeFiltersCount = computed(() => {
-		let c = 0;
-		if (appliedFilters.rooms.length) c++;
-		if (
-			appliedFilters.priceRange[0] !== priceRange.value[0] ||
-			appliedFilters.priceRange[1] !== priceRange.value[1]
-		)
-			c++;
-		if (
-			appliedFilters.areaRange[0] !== areaRange.value[0] ||
-			appliedFilters.areaRange[1] !== areaRange.value[1]
-		)
-			c++;
-		return c;
-	});
+    const upsertApartments = (
+      apartments: Apartment[],
+      purgeMissing = false
+    ): boolean => {
+      let hasChanges = false;
+      const currentIds = new Set(storageState.hashMap.keys());
+      const newIds = new Set<string>();
 
-	const upsertBatch = (batch: Apartment[]): string[] => {
-		const ids: string[] = [];
-		for (const apt of batch) {
-			const id = String((apt as any).id);
-			ids.push(id);
-			if (entities[id]) {
-				Object.assign(entities[id], apt);
-			} else {
-				entities[id] = apt;
-			}
-		}
-		return ids;
-	};
+      for (const apartment of apartments) {
+        const id = String(apartment.id);
+        const hash = createApartmentHash(apartment);
+        newIds.add(id);
 
-	const syncResetList = (allBatches: Apartment[][]) => {
-		const flat = allBatches.flat();
-		const ids = upsertBatch(flat);
-		currentIds.value = ids;
-	};
+        const existing = storageState.hashMap.get(id);
 
-	const updateCacheAndList = (
-		batch: Apartment[],
-		isReset: boolean,
-		pageIndex: number
-	) => {
-		// НЕ очищаем глобальные entities – копим супермножество
-		const sig = querySignature.value;
-		let entry = cache.get(sig);
-		if (!entry) {
-			entry = { pages: new Map(), total: 0, complete: false };
-			cache.set(sig, entry);
-		}
-		if (isReset) entry.pages = new Map();
-		entry.pages.set(pageIndex, batch);
-		const newIds = upsertBatch(batch);
-		// Добавляем новые id в общий список (стабильный порядок: впервые увиденный в конец)
-		const existingSet = new Set(currentIds.value);
-		for (const id of newIds)
-			if (!existingSet.has(id)) currentIds.value.push(id);
-	};
+        if (!existing || existing.hash !== hash) {
+          storageState.hashMap.set(id, {
+            id,
+            hash,
+            apartment: { ...apartment },
+          });
+          hasChanges = true;
+        }
+      }
 
-	const buildQuery = (offset: number, limit: number) => {
-		const params = new URLSearchParams();
-		params.set('offset', String(offset));
-		params.set('limit', String(limit));
-		if (sort.value.field) {
-			params.set('sortField', sort.value.field);
-			params.set('sortDir', sort.value.direction);
-		}
-		if (appliedFilters.rooms.length)
-			params.set('rooms', appliedFilters.rooms.join(','));
-		params.set('priceMin', String(appliedFilters.priceRange[0]));
-		params.set('priceMax', String(appliedFilters.priceRange[1]));
-		params.set('areaMin', String(appliedFilters.areaRange[0]));
-		params.set('areaMax', String(appliedFilters.areaRange[1]));
-		return `/api/apartments?${params.toString()}`;
-	};
+      if (purgeMissing && apartments.length > 0) {
+        for (const id of currentIds) {
+          if (!newIds.has(id)) {
+            storageState.hashMap.delete(id);
+            hasChanges = true;
+          }
+        }
+      }
 
-	const loadApartments = async (reset = true) => {
-		const sig = querySignature.value;
-		const cacheEntry = cache.get(sig);
-		// При reset НЕ чистим глобальный список; просто если всё есть – можно пропустить fetch
-		if (reset && cacheEntry && cacheEntry.complete) {
-			pagination.value.totalItems = cacheEntry.total;
-			pagination.value.hasMore = false;
-			return;
-		}
-		try {
-			if (reset) {
-				isLoading.value = true;
-				error.value = null;
-				pagination.value.currentPage = 0;
-				pagination.value.hasMore = true;
-			}
-			const offset =
-				pagination.value.currentPage * pagination.value.itemsPerPage;
-			const pageIndex = pagination.value.currentPage;
-			if (!reset && cacheEntry && cacheEntry.pages.has(pageIndex)) {
-				const batchCached = cacheEntry.pages.get(pageIndex)!;
-				updateCacheAndList(batchCached, false, pageIndex);
-				pagination.value.currentPage++;
-				pagination.value.hasMore = currentIds.value.length < cacheEntry.total;
-				return;
-			}
-			const url = buildQuery(offset, pagination.value.itemsPerPage);
-			const response: any = await $fetch(url);
-			const batch: Apartment[] = Array.isArray(response?.apartments)
-				? response.apartments
-				: [];
-			if (reset) {
-				pagination.value.totalItems = Number(response?.total) || batch.length;
-				if (
-					Number.isFinite(response?.priceMin) &&
-					Number.isFinite(response?.priceMax) &&
-					response.priceMin <= response.priceMax
-				)
-					priceRange.value = [response.priceMin, response.priceMax];
-				if (
-					Number.isFinite(response?.areaMin) &&
-					Number.isFinite(response?.areaMax) &&
-					response.areaMin <= response.areaMax
-				)
-					areaRange.value = [response.areaMin, response.areaMax];
-				updateCacheAndList(batch, true, pageIndex);
-			} else updateCacheAndList(batch, false, pageIndex);
-			pagination.value.currentPage++;
-			const total = Number(response?.total) || currentIds.value.length;
-			pagination.value.hasMore = currentIds.value.length < total;
-			const entry = cache.get(querySignature.value)!;
-			entry.total = total;
-			entry.priceRange = priceRange.value;
-			entry.areaRange = areaRange.value;
-			entry.complete = !pagination.value.hasMore;
-			if (!pagination.value.hasMore) {
-				lastLoadedSignature.value = querySignature.value;
-				lastLoadedTotal.value = currentIds.value.length;
-			}
-		} catch (e) {
-			error.value = 'Ошибка загрузки данных';
-		} finally {
-			isLoading.value = false;
-			isAppending.value = false;
-			isFiltering.value = false;
-		}
-	};
+      return hasChanges;
+    };
 
-	const loadMore = async () => {
-		if (!pagination.value.hasMore || isAppending.value || isLoading.value)
-			return;
-		isAppending.value = true;
-		try {
-			await loadApartments(false);
-		} finally {
-			isAppending.value = false;
-		}
-	};
+    const matchesFilters = (
+      apartment: Apartment,
+      filters: FilterState
+    ): boolean => {
+      if (filters.rooms.length && !filters.rooms.includes(apartment.rooms))
+        return false;
+      if (
+        apartment.price < filters.priceRange[0] ||
+        apartment.price > filters.priceRange[1]
+      )
+        return false;
+      if (
+        apartment.area < filters.areaRange[0] ||
+        apartment.area > filters.areaRange[1]
+      )
+        return false;
+      return true;
+    };
 
-	// --- Filters API ---
-	const assignArr = (target: number[], src: number[]): boolean => {
-		let changed = target.length !== src.length;
-		if (changed) {
-			target.length = 0;
-			for (const v of src) target.push(v);
-			return true;
-		}
-		for (let i = 0; i < src.length; i++)
-			if (target[i] !== src[i]) {
-				changed = true;
-				break;
-			}
-		if (changed) {
-			target.length = 0;
-			for (const v of src) target.push(v);
-		}
-		return changed;
-	};
+    const applyFiltersAndSort = (): string[] => {
+      const filterHash = createFilterHash(
+        appliedFilters,
+        sort.value.field,
+        sort.value.direction
+      );
 
-	const setDraftFilters = (partial: Partial<FilterState>) => {
-		if (partial.rooms) assignArr(draftFilters.rooms, partial.rooms);
-		if (partial.priceRange) {
-			if (draftFilters.priceRange[0] !== partial.priceRange[0])
-				draftFilters.priceRange[0] = partial.priceRange[0];
-			if (draftFilters.priceRange[1] !== partial.priceRange[1])
-				draftFilters.priceRange[1] = partial.priceRange[1];
-		}
-		if (partial.areaRange) {
-			if (draftFilters.areaRange[0] !== partial.areaRange[0])
-				draftFilters.areaRange[0] = partial.areaRange[0];
-			if (draftFilters.areaRange[1] !== partial.areaRange[1])
-				draftFilters.areaRange[1] = partial.areaRange[1];
-		}
-	};
-	const commitFilters = () => {
-		let changed = false;
-		changed = assignArr(appliedFilters.rooms, draftFilters.rooms) || changed;
-		for (let i = 0; i < 2; i++) {
-			const dv = draftFilters.priceRange[i] as number;
-			if (appliedFilters.priceRange[i] !== dv) {
-				appliedFilters.priceRange[i] = dv as number;
-				changed = true;
-			}
-		}
-		for (let i = 0; i < 2; i++) {
-			const dv = draftFilters.areaRange[i] as number;
-			if (appliedFilters.areaRange[i] !== dv) {
-				appliedFilters.areaRange[i] = dv as number;
-				changed = true;
-			}
-		}
-		if (!changed) return;
-		isFiltering.value = true;
-		// Сортировка теперь чисто клиентская (не дергаем сеть)
-		// loadApartments(true); // если нужна серверная – раскомментировать
-	};
-	const resetFilters = () => {
-		assignArr(draftFilters.rooms, []);
-		draftFilters.priceRange[0] = priceRange.value[0];
-		draftFilters.priceRange[1] = priceRange.value[1];
-		draftFilters.areaRange[0] = areaRange.value[0];
-		draftFilters.areaRange[1] = areaRange.value[1];
-		commitFilters();
-	};
+      if (
+        filterHash === storageState.lastFilterHash &&
+        storageState.filteredIds.size > 0
+      ) {
+        return Array.from(storageState.filteredIds);
+      }
 
-	const updateSort = (field: string, direction: 'asc' | 'desc') => {
-		sort.value = { field, direction };
-		loadApartments(true);
-	};
+      const filtered: { id: string; apartment: Apartment }[] = [];
+      for (const [id, apartmentHash] of storageState.hashMap) {
+        if (matchesFilters(apartmentHash.apartment, appliedFilters)) {
+          filtered.push({ id, apartment: apartmentHash.apartment });
+        }
+      }
 
-	const initialized = ref(false);
-	const init = async () => {
-		if (initialized.value) return;
-		initialized.value = true;
-		await loadApartments(true);
-	};
+      if (sort.value.field) {
+        const field = sort.value.field as keyof Apartment;
+        const direction = sort.value.direction === 'asc' ? 1 : -1;
 
-	return {
-		apartments: readonly(apartments), // все загруженные (супермножество)
-		visibleApartments: readonly(visibleApartments), // итог после клиентских фильтров + сортировки
-		isLoading: readonly(isLoading),
-		isAppending: readonly(isAppending),
-		isFiltering: readonly(isFiltering),
-		error: readonly(error),
-		draftFilters,
-		appliedFilters,
-		sort: readonly(sort),
-		pagination: readonly(pagination),
-		priceRange,
-		areaRange,
-		activeFiltersCount,
-		init,
-		loadApartments,
-		loadMore,
-		setDraftFilters,
-		commitFilters,
-		updateSort,
-		resetFilters,
-	};
-});
+        filtered.sort((a, b) => {
+          const aVal = a.apartment[field];
+          const bVal = b.apartment[field];
+          if (aVal === bVal) return 0;
+          return aVal > bVal ? direction : -direction;
+        });
+      }
+
+      const resultIds = filtered.map(item => item.id);
+      storageState.filteredIds = new Set(resultIds);
+      storageState.lastFilterHash = filterHash;
+
+      return resultIds;
+    };
+
+    const allApartments = computed<Apartment[]>(() => {
+      return Array.from(storageState.hashMap.values()).map(
+        item => item.apartment
+      );
+    });
+
+    const visibleApartments = computed<Apartment[]>(() => {
+      const filteredIds = applyFiltersAndSort();
+      return filteredIds
+        .map(id => storageState.hashMap.get(id)?.apartment)
+        .filter((apartment): apartment is Apartment => !!apartment);
+    });
+
+    const activeFiltersCount = computed(() => {
+      let count = 0;
+      if (appliedFilters.rooms.length) count++;
+      if (
+        appliedFilters.priceRange[0] !== priceRange.value[0] ||
+        appliedFilters.priceRange[1] !== priceRange.value[1]
+      )
+        count++;
+      if (
+        appliedFilters.areaRange[0] !== areaRange.value[0] ||
+        appliedFilters.areaRange[1] !== areaRange.value[1]
+      )
+        count++;
+      return count;
+    });
+
+    const loadApartments = async (reset = true) => {
+      try {
+        if (reset) {
+          isLoading.value = true;
+          error.value = null;
+          pagination.value.currentPage = 0;
+          pagination.value.hasMore = true;
+        } else {
+          isAppending.value = true;
+        }
+
+        const offset =
+          pagination.value.currentPage * pagination.value.itemsPerPage;
+        const params = new URLSearchParams({
+          offset: String(offset),
+          limit: String(pagination.value.itemsPerPage),
+        });
+
+        if (sort.value.field) {
+          params.set('sortField', sort.value.field);
+          params.set('sortDir', sort.value.direction);
+        }
+
+        const response: any = await $fetch(
+          `/api/apartments?${params.toString()}`
+        );
+        const apartments: Apartment[] = Array.isArray(response?.apartments)
+          ? response.apartments
+          : [];
+
+        if (reset) {
+          storageState.hashMap.clear();
+          storageState.filteredIds.clear();
+          storageState.lastFilterHash = '';
+        }
+
+        const hasChanges = upsertApartments(apartments, reset);
+
+        if (hasChanges || reset) {
+          storageState.filteredIds.clear();
+          storageState.lastFilterHash = '';
+        }
+
+        if (reset) {
+          pagination.value.totalItems =
+            Number(response?.total) || apartments.length;
+
+          if (
+            Number.isFinite(response?.priceMin) &&
+            Number.isFinite(response?.priceMax)
+          ) {
+            priceRange.value = [response.priceMin, response.priceMax];
+          }
+
+          if (
+            Number.isFinite(response?.areaMin) &&
+            Number.isFinite(response?.areaMax)
+          ) {
+            areaRange.value = [response.areaMin, response.areaMax];
+          }
+        }
+
+        pagination.value.currentPage++;
+        pagination.value.hasMore =
+          pagination.value.currentPage * pagination.value.itemsPerPage <
+          (Number(response?.total) || apartments.length);
+      } catch (e) {
+        error.value = 'Ошибка загрузки данных';
+        console.error('Load apartments error:', e);
+      } finally {
+        isLoading.value = false;
+        isAppending.value = false;
+        isFiltering.value = false;
+      }
+    };
+
+    const loadMore = async () => {
+      if (!pagination.value.hasMore || isAppending.value || isLoading.value)
+        return;
+      await loadApartments(false);
+    };
+
+    const loadRoom = async (room: number) => {
+      if (fullyLoadedRooms.has(room)) return;
+      try {
+        let offset = 0;
+        const limit = 50;
+        let total = Infinity;
+        while (offset < total) {
+          const params = new URLSearchParams({
+            offset: String(offset),
+            limit: String(limit),
+            rooms: String(room),
+          });
+          if (sort.value.field) {
+            params.set('sortField', sort.value.field);
+            params.set('sortDir', sort.value.direction);
+          }
+          const resp: any = await $fetch(
+            `/api/apartments?${params.toString()}`
+          );
+          const batch: Apartment[] = Array.isArray(resp?.apartments)
+            ? resp.apartments
+            : [];
+          if (!batch.length) break;
+          upsertApartments(batch, false);
+          storageState.filteredIds.clear();
+          storageState.lastFilterHash = '';
+          total = Number(resp?.total) || offset + batch.length;
+          offset += batch.length;
+          if (batch.length < limit) break;
+        }
+        fullyLoadedRooms.add(room);
+      } catch (e) {
+        console.warn('loadRoom failed', room, e);
+      }
+    };
+
+    const ensureRoomsLoaded = async (rooms: number[]) => {
+      for (const r of rooms) if (typeof r === 'number') await loadRoom(r);
+    };
+
+    const assignArray = (target: number[], source: number[]): boolean => {
+      if (target.length !== source.length) {
+        target.splice(0, target.length, ...source);
+        return true;
+      }
+
+      let changed = false;
+      for (let i = 0; i < source.length; i++) {
+        if (target[i] !== source[i]) {
+          changed = true;
+          break;
+        }
+      }
+
+      if (changed) {
+        target.splice(0, target.length, ...source);
+      }
+
+      return changed;
+    };
+
+    const setDraftFilters = (partial: Partial<FilterState>) => {
+      if (partial.rooms) {
+        assignArray(draftFilters.rooms, partial.rooms);
+      }
+      if (partial.priceRange) {
+        draftFilters.priceRange[0] = partial.priceRange[0];
+        draftFilters.priceRange[1] = partial.priceRange[1];
+      }
+      if (partial.areaRange) {
+        draftFilters.areaRange[0] = partial.areaRange[0];
+        draftFilters.areaRange[1] = partial.areaRange[1];
+      }
+    };
+
+    const commitFilters = () => {
+      let changed = false;
+
+      changed =
+        assignArray(appliedFilters.rooms, draftFilters.rooms) || changed;
+
+      if (appliedFilters.priceRange[0] !== draftFilters.priceRange[0]) {
+        appliedFilters.priceRange[0] = draftFilters.priceRange[0];
+        changed = true;
+      }
+      if (appliedFilters.priceRange[1] !== draftFilters.priceRange[1]) {
+        appliedFilters.priceRange[1] = draftFilters.priceRange[1];
+        changed = true;
+      }
+
+      if (appliedFilters.areaRange[0] !== draftFilters.areaRange[0]) {
+        appliedFilters.areaRange[0] = draftFilters.areaRange[0];
+        changed = true;
+      }
+      if (appliedFilters.areaRange[1] !== draftFilters.areaRange[1]) {
+        appliedFilters.areaRange[1] = draftFilters.areaRange[1];
+        changed = true;
+      }
+
+      if (changed) {
+        isFiltering.value = true;
+        storageState.filteredIds.clear();
+        storageState.lastFilterHash = '';
+        saveFiltersToLocalStorage();
+
+        nextTick(() => {
+          isFiltering.value = false;
+        });
+      }
+    };
+
+    const resetFilters = () => {
+      assignArray(draftFilters.rooms, []);
+      draftFilters.priceRange[0] = priceRange.value[0];
+      draftFilters.priceRange[1] = priceRange.value[1];
+      draftFilters.areaRange[0] = areaRange.value[0];
+      draftFilters.areaRange[1] = areaRange.value[1];
+      commitFilters();
+    };
+
+    const updateSort = (field: string, direction: 'asc' | 'desc') => {
+      sort.value = { field, direction };
+      storageState.filteredIds.clear();
+      storageState.lastFilterHash = '';
+    };
+
+    const STORAGE_KEY = 'apartments-filters';
+
+    const saveFiltersToLocalStorage = () => {
+      if (process.client) {
+        try {
+          const data = {
+            rooms: appliedFilters.rooms,
+            priceRange: appliedFilters.priceRange,
+            areaRange: appliedFilters.areaRange,
+            sort: sort.value,
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {
+          console.warn('Failed to save filters to localStorage:', e);
+        }
+      }
+    };
+
+    const loadFiltersFromLocalStorage = () => {
+      if (process.client) {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            const data = JSON.parse(saved);
+
+            if (data.rooms && Array.isArray(data.rooms)) {
+              assignArray(appliedFilters.rooms, data.rooms);
+              assignArray(draftFilters.rooms, data.rooms);
+            }
+
+            if (data.priceRange && Array.isArray(data.priceRange)) {
+              appliedFilters.priceRange[0] = data.priceRange[0];
+              appliedFilters.priceRange[1] = data.priceRange[1];
+              draftFilters.priceRange[0] = data.priceRange[0];
+              draftFilters.priceRange[1] = data.priceRange[1];
+            }
+
+            if (data.areaRange && Array.isArray(data.areaRange)) {
+              appliedFilters.areaRange[0] = data.areaRange[0];
+              appliedFilters.areaRange[1] = data.areaRange[1];
+              draftFilters.areaRange[0] = data.areaRange[0];
+              draftFilters.areaRange[1] = data.areaRange[1];
+            }
+
+            if (data.sort && typeof data.sort === 'object') {
+              sort.value = { ...data.sort };
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to load filters from localStorage:', e);
+        }
+      }
+    };
+
+    const init = async () => {
+      if (initialized.value) return;
+      initialized.value = true;
+
+      loadFiltersFromLocalStorage();
+
+      await loadApartments(true);
+    };
+
+    return {
+      apartments: readonly(allApartments),
+      visibleApartments: readonly(visibleApartments),
+
+      isLoading: readonly(isLoading),
+      isAppending: readonly(isAppending),
+      isFiltering: readonly(isFiltering),
+      error: readonly(error),
+
+      draftFilters,
+      appliedFilters: readonly(appliedFilters),
+      activeFiltersCount,
+
+      sort: readonly(sort),
+
+      pagination: readonly(pagination),
+
+      priceRange: readonly(priceRange),
+      areaRange: readonly(areaRange),
+
+      init,
+      loadApartments,
+      loadMore,
+      setDraftFilters,
+      commitFilters,
+      resetFilters,
+      updateSort,
+      loadRoom,
+      ensureRoomsLoaded,
+    };
+  }
+);

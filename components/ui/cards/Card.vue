@@ -45,7 +45,6 @@ const cardClasses = computed(() => {
 	background-color: $surface;
 	transition: all $transition-fast;
 
-	// Variants
 	&--default {
 		border: 1px solid $border-color;
 	}
@@ -59,7 +58,6 @@ const cardClasses = computed(() => {
 		box-shadow: 0 4px 8px rgba($text-primary, 0.1);
 	}
 
-	// Padding
 	&--padding-none {
 		.card__header,
 		.card__body,
@@ -92,7 +90,6 @@ const cardClasses = computed(() => {
 		}
 	}
 
-	// States
 	&--hoverable {
 		cursor: pointer;
 
@@ -102,7 +99,6 @@ const cardClasses = computed(() => {
 		}
 	}
 
-	// Structure
 	&__header {
 		border-bottom: 1px solid $border-color;
 	}

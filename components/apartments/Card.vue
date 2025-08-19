@@ -1,6 +1,5 @@
 <template>
 	<article class="apartment-card">
-		<!-- Планировка -->
 		<div class="apartment-card__image">
 			<img
 				:src="apartment.planImage"
@@ -10,12 +9,10 @@
 			/>
 		</div>
 
-		<!-- Квартира -->
 		<div class="apartment-card__title-column">
 			<h3 class="apartment-card__title">{{ apartment.name }}</h3>
 		</div>
 
-		<!-- S, м² -->
 		<div class="apartment-card__area">
 			<span class="apartment-card__detail-value"
 				>{{ apartment.area }}
@@ -23,7 +20,6 @@
 			>
 		</div>
 
-		<!-- Этаж -->
 		<div class="apartment-card__floor">
 			<span class="apartment-card__detail-value"
 				>{{ apartment.floor }}
@@ -34,7 +30,6 @@
 			>
 		</div>
 
-		<!-- Цена -->
 		<div class="apartment-card__price-column">
 			<span class="apartment-card__price"
 				>{{ formatPrice(apartment.price) }}

@@ -1,6 +1,5 @@
 <template>
 	<div class="apartment-list-optimized">
-		<!-- Список квартир с оптимизированными анимациями -->
 		<div class="apartment-list-optimized__container">
 			<TransitionGroup
 				name="apartment-fade"
@@ -18,7 +17,6 @@
 			</TransitionGroup>
 		</div>
 
-		<!-- Кнопка "Загрузить еще" -->
 		<div v-if="store.pagination.hasMore" class="apartment-list-optimized__load-more">
 			<UIControlsButton
 				:loading="store.isAppending"
@@ -31,7 +29,6 @@
 			</UIControlsButton>
 		</div>
 
-		<!-- Индикатор загрузки -->
 		<div
 			v-if="store.isLoading && apartments.length === 0"
 			class="apartment-list-optimized__loading"
@@ -40,7 +37,6 @@
 			<p class="apartment-list-optimized__loading-text">Загрузка квартир...</p>
 		</div>
 
-		<!-- Индикатор фильтрации -->
 		<div
 			v-if="store.isFiltering"
 			class="apartment-list-optimized__filtering"
@@ -49,7 +45,6 @@
 			<p class="apartment-list-optimized__filtering-text">Применение фильтров...</p>
 		</div>
 
-		<!-- Пустое состояние -->
 		<div
 			v-if="!store.isLoading && !store.isFiltering && apartments.length === 0"
 			class="apartment-list-optimized__empty"
@@ -64,7 +59,7 @@
 			<UIControlsButton
 				@click="store.resetFilters"
 				variant="primary"
-				size="medium"
+				size="md"
 			>
 				Сбросить фильтры
 			</UIControlsButton>
@@ -78,15 +73,13 @@ import type { Apartment } from '../../types';
 
 interface Props {
 	apartments: Apartment[];
-	store: any; // Можно типизировать лучше, но для совместимости оставим any
+	store: any; 
 }
 
 const props = defineProps<Props>();
 
-// Используем shallowRef для оптимизации производительности
 const apartments = shallowRef<Apartment[]>([]);
 
-// Оптимизированное отслеживание изменений списка квартир
 watchEffect(() => {
 	apartments.value = props.apartments;
 });
@@ -119,15 +112,10 @@ const loadMore = () => {
 	}
 
 	&__item {
-		// Оптимизация для анимаций
 		will-change: transform, opacity;
 		
 		&:not(:last-child) {
 			border-bottom: 1px solid $border-color;
-			
-			@include tablet {
-				border-bottom: none;
-			}
 		}
 	}
 
@@ -199,7 +187,6 @@ const loadMore = () => {
 	}
 }
 
-// Оптимизированные анимации для TransitionGroup
 .apartment-fade-enter-active {
 	transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
@@ -218,18 +205,15 @@ const loadMore = () => {
 	transform: translateY(-10px) scale(0.98);
 }
 
-// Анимация для перемещения элементов
 .apartment-fade-move {
 	transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-// Обеспечиваем плавность анимации при изменении списка
 .apartment-fade-leave-active {
 	position: absolute;
 	width: 100%;
 }
 
-// Стили для мобильных устройств
 @include mobile {
 	.apartment-list-optimized {
 		&__loading,
@@ -256,7 +240,6 @@ const loadMore = () => {
 	}
 }
 
-// Стили для планшетов
 @include tablet {
 	.apartment-list-optimized {
 		&__grid {
@@ -265,7 +248,6 @@ const loadMore = () => {
 	}
 }
 
-// Улучшение производительности анимаций
 @media (prefers-reduced-motion: reduce) {
 	.apartment-fade-enter-active,
 	.apartment-fade-leave-active,
@@ -274,7 +256,6 @@ const loadMore = () => {
 	}
 }
 
-// Оптимизация для темной темы (если потребуется)
 @media (prefers-color-scheme: dark) {
 	.apartment-list-optimized {
 		&__filtering {

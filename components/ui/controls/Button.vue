@@ -95,7 +95,6 @@ const handleClick = (event: MouseEvent) => {
 		outline-offset: 2px;
 	}
 
-	// Sizes
 	&--sm {
 		padding: calc($spacing-xs / 2) $spacing-sm;
 		font-size: $font-size-sm;
@@ -120,7 +119,6 @@ const handleClick = (event: MouseEvent) => {
 		line-height: 1.5;
 	}
 
-	// Variants
 	&--primary {
 		background-color: $accent;
 		color: $surface;
@@ -194,7 +192,6 @@ const handleClick = (event: MouseEvent) => {
 		}
 	}
 
-	// States
 	&--disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
@@ -208,7 +205,6 @@ const handleClick = (event: MouseEvent) => {
 		width: 100%;
 	}
 
-	// Spinner
 	&__spinner {
 		display: flex;
 		align-items: center;

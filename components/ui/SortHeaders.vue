@@ -1,6 +1,5 @@
 <template>
 	<div class="sort-headers">
-		<!-- Sort Headers -->
 		<div class="sort-headers__columns">
 			<component
 				v-for="header in headers"
@@ -19,7 +18,6 @@
 				@click="header.sortable !== false && handleSort(header.key)"
 			>
 				<span class="sort-headers__label">{{ header.label }}</span>
-				<!-- Иконка сортировки только для сортируемых -->
 				<svg
 					v-if="header.sortable !== false"
 					class="sort-headers__icon"
@@ -28,19 +26,16 @@
 					viewBox="0 0 12 12"
 					fill="none"
 				>
-					<!-- Стрелка вверх для asc -->
 					<path
 						v-if="sortField === header.key && sortDirection === 'asc'"
 						d="M6 2L9 5H3L6 2Z"
 						fill="currentColor"
 					/>
-					<!-- Стрелка вниз для desc -->
 					<path
 						v-else-if="sortField === header.key && sortDirection === 'desc'"
 						d="M6 10L3 7H9L6 10Z"
 						fill="currentColor"
 					/>
-					<!-- Обе стрелки для неактивного состояния -->
 					<template v-else>
 						<path d="M6 2L9 5H3L6 2Z" fill="currentColor" opacity="0.3" />
 						<path d="M6 10L3 7H9L6 10Z" fill="currentColor" opacity="0.3" />
@@ -55,8 +50,7 @@
 interface Header {
 	key: string;
 	label: string;
-	/** Если false — это статический заголовок (заглушка), не участвует в сортировке */
-	sortable?: boolean; // default: true
+	sortable?: boolean;
 }
 
 interface Props {
@@ -81,7 +75,6 @@ const handleSort = (field: string) => {
 	let newDirection: 'asc' | 'desc' = 'asc';
 
 	if (currentField === field) {
-		// Если кликнули по тому же полю, меняем направление
 		newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
 	}
 
@@ -143,7 +136,6 @@ const handleSort = (field: string) => {
 		&--static {
 			cursor: default;
 			color: $text-secondary;
-			// Скрываем на планшетах и мобильных
 			@include tablet {
 				display: none;
 			}

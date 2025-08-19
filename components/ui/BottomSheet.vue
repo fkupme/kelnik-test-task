@@ -60,19 +60,17 @@ onMounted(() => {
 
 const open = async () => {
 	console.log('open() called, current isOpen:', isOpen.value);
-	if (isOpen.value) return; // Избегаем повторного открытия
+	if (isOpen.value) return;
 
 	isOpen.value = true;
 	console.log('Set isOpen to true');
 	await nextTick();
 
-	// Небольшая задержка для триггера анимации
 	setTimeout(() => {
 		isVisible.value = true;
 		console.log('Set isVisible to true');
 	}, 10);
 
-	// Блокируем скролл body
 	if (typeof document !== 'undefined') {
 		document.body.style.overflow = 'hidden';
 	}
@@ -80,11 +78,10 @@ const open = async () => {
 
 const close = async () => {
 	console.log('close() called, current isOpen:', isOpen.value);
-	if (!isOpen.value) return; // Избегаем повторного закрытия
+	if (!isOpen.value) return;
 
 	isVisible.value = false;
 
-	// Ждем окончания анимации перед удалением из DOM
 	setTimeout(() => {
 		isOpen.value = false;
 		if (typeof document !== 'undefined') {
@@ -94,7 +91,6 @@ const close = async () => {
 	}, 300);
 };
 
-// Отслеживаем изменения modelValue
 watch(
 	() => props.modelValue,
 	async (newValue, oldValue) => {
@@ -104,7 +100,6 @@ watch(
 			console.log('Opening bottom sheet...');
 			await open();
 		} else if (oldValue !== undefined) {
-			// Закрываем только если oldValue определен (не первый вызов)
 			console.log('Closing bottom sheet...');
 			await close();
 		}
@@ -118,7 +113,6 @@ const onBackdropClick = () => {
 	}
 };
 
-// Очищаем overflow при размонтировании компонента
 onUnmounted(() => {
 	if (typeof document !== 'undefined') {
 		document.body.style.overflow = '';
@@ -138,7 +132,6 @@ onUnmounted(() => {
 	z-index: 1000;
 	pointer-events: auto;
 
-	// Отладочный стиль
 	border: 2px solid red !important;
 
 	&__backdrop {
@@ -226,7 +219,6 @@ onUnmounted(() => {
 	}
 }
 
-// Скрываем bottom sheet на больших экранах
 @include desktop {
 	.bottom-sheet {
 		display: none;

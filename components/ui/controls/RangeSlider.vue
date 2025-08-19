@@ -44,7 +44,7 @@ interface Props {
 
 interface Emits {
 	(e: 'update:modelValue', value: [number, number]): void;
-	(e: 'commit'): void; // пользователь закончил перетаскивание
+	(e: 'commit'): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -82,7 +82,6 @@ const emitCommit = () => {
 	emit('commit');
 };
 
-// Синхронизация с внешними изменениями
 watch(
 	() => props.modelValue,
 	newValue => {

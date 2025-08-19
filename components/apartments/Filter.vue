@@ -1,49 +1,45 @@
 <template>
-	<aside class="filter" role="complementary" aria-label="Фильтры квартир">
-		<!-- Заголовок и сброс фильтров -->
-		<header class="filter__header">
-			<h2 class="filter__main-title">Фильтры</h2>
-			<button 
-				v-if="apartmentsStore.activeFiltersCount > 0"
-				class="filter__reset-all"
-				@click="resetFilters"
-				:aria-label="`Сбросить все фильтры (активно ${apartmentsStore.activeFiltersCount})`"
-			>
-				Сбросить ({{ apartmentsStore.activeFiltersCount }})
-			</button>
-		</header>
+	<aside
+		class="filter-optimized"
+		:class="{ 'filter-optimized--filtering': store.isFiltering }"
+	>
+		<div class="filter-optimized__header">
+			<h2 class="filter-optimized__title">Фильтры</h2>
+			<Transition name="spinner-fade">
+				<UIFeedbackSpinner
+					v-if="store.isFiltering"
+					size="sm"
+					class="filter-optimized__spinner"
+				/>
+			</Transition>
+		</div>
 
-		<!-- Фильтр по комнатам -->
-		<section class="filter__section" aria-labelledby="rooms-title">
-			<h3 id="rooms-title" class="filter__title">Количество комнат</h3>
-			<div class="filter__rooms-buttons" role="group" aria-labelledby="rooms-title">
+
+		<section class="filter-optimized__section">
+			<h3 class="filter-optimized__section-title">Количество комнат</h3>
+			<div class="filter-optimized__rooms">
 				<UIControlsRoomButton
 					v-for="room in allPossibleRooms"
 					:key="room"
 					:room="room"
 					:active="selectedRooms.includes(room)"
-					:disabled="!availableRooms.includes(room)"
+					:disabled="store.isFiltering"
 					@click="toggleRoom"
-					:aria-pressed="selectedRooms.includes(room)"
-					:aria-describedby="`room-${room}-desc`"
 				/>
-			</div>
-			<!-- Скрытые описания для screen readers -->
-			<div class="sr-only">
-				<div v-for="room in allPossibleRooms" :key="room" :id="`room-${room}-desc`">
-					{{ room }}-комнатная квартира
-				</div>
 			</div>
 		</section>
 
-		<!-- Фильтр по цене -->
-		<section class="filter__section" aria-labelledby="price-title">
-			<h3 id="price-title" class="filter__title">Стоимость квартиры, ₽</h3>
-			<div class="filter__range" aria-live="polite">
-				<span class="filter__range-label filter__range-label--min" aria-label="Минимальная цена">
+		<section class="filter-optimized__section">
+			<h3 class="filter-optimized__section-title">Стоимость квартиры, ₽</h3>
+			<div class="filter-optimized__range-labels">
+				<span
+					class="filter-optimized__range-label filter-optimized__range-label--min"
+				>
 					от {{ formatPrice(priceRange[0]) }}
 				</span>
-				<span class="filter__range-label filter__range-label--max" aria-label="Максимальная цена">
+				<span
+					class="filter-optimized__range-label filter-optimized__range-label--max"
+				>
 					до {{ formatPrice(priceRange[1]) }}
 				</span>
 			</div>
@@ -52,23 +48,22 @@
 				:min="minPrice"
 				:max="maxPrice"
 				:step="priceStep"
-				@commit="commitPrice"
-				aria-labelledby="price-title"
-				aria-describedby="price-range-desc"
+				:disabled="store.isFiltering"
+				@commit="commitPriceFilter"
 			/>
-			<div id="price-range-desc" class="sr-only">
-				Диапазон цен от {{ formatPrice(minPrice) }} до {{ formatPrice(maxPrice) }} рублей
-			</div>
 		</section>
 
-		<!-- Фильтр по площади -->
-		<section class="filter__section" aria-labelledby="area-title">
-			<h3 id="area-title" class="filter__title">Площадь, м²</h3>
-			<div class="filter__range" aria-live="polite">
-				<span class="filter__range-label filter__range-label--min" aria-label="Минимальная площадь">
+		<section class="filter-optimized__section">
+			<h3 class="filter-optimized__section-title">Площадь, м²</h3>
+			<div class="filter-optimized__range-labels">
+				<span
+					class="filter-optimized__range-label filter-optimized__range-label--min"
+				>
 					от {{ areaRange[0] }}
 				</span>
-				<span class="filter__range-label filter__range-label--max" aria-label="Максимальная площадь">
+				<span
+					class="filter-optimized__range-label filter-optimized__range-label--max"
+				>
 					до {{ areaRange[1] }}
 				</span>
 			</div>
@@ -77,142 +72,197 @@
 				:min="minArea"
 				:max="maxArea"
 				:step="areaStep"
-				@commit="commitArea"
-				aria-labelledby="area-title"
-				aria-describedby="area-range-desc"
+				:disabled="store.isFiltering"
+				@commit="commitAreaFilter"
 			/>
-			<div id="area-range-desc" class="sr-only">
-				Диапазон площади от {{ minArea }} до {{ maxArea }} квадратных метров
-			</div>
 		</section>
 
-		<!-- Главная кнопка сброса -->
-		<footer class="filter__footer">
-			<button 
-				class="filter__reset" 
-				@click="resetFilters"
-				:disabled="apartmentsStore.activeFiltersCount === 0"
-				:aria-label="apartmentsStore.activeFiltersCount > 0 ? 'Сбросить все фильтры' : 'Нет активных фильтров для сброса'"
+		<div class="filter-optimized__actions">
+			<UIControlsButton
+				@click="resetAllFilters"
+				variant="outline"
+				size="md"
+				:disabled="store.isFiltering || store.activeFiltersCount === 0"
+				class="filter-optimized__reset"
 			>
 				Сбросить фильтры
-			</button>
-		</footer>
+			</UIControlsButton>
+		</div>
 	</aside>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { useApartmentsStore } from '../../stores/apartments';
+import { computed, nextTick, ref, watch } from 'vue';
 
-const apartmentsStore = useApartmentsStore();
+interface Props {
+	store: any;
+}
 
-const availableRooms = computed(() => {
-	if (apartmentsStore.apartments.length === 0) return [1, 2, 3, 4];
-	const rooms = [...new Set(apartmentsStore.apartments.map(apt => apt.rooms))];
-	return rooms.sort((a: number, b: number) => a - b);
-});
+const props = defineProps<Props>();
 
-const allPossibleRooms = computed(() => {
-	if (apartmentsStore.apartments.length === 0) return [1, 2, 3, 4];
-	const rooms = [...new Set(apartmentsStore.apartments.map(apt => apt.rooms))];
-	return rooms.sort((a: number, b: number) => a - b);
-});
-
-const selectedRooms = ref<number[]>([...apartmentsStore.draftFilters.rooms]);
+const selectedRooms = ref<number[]>([...props.store.draftFilters.rooms]);
 const priceRange = ref<[number, number]>([
-	apartmentsStore.draftFilters.priceRange[0] || apartmentsStore.priceRange[0] || 5500000,
-	apartmentsStore.draftFilters.priceRange[1] || apartmentsStore.priceRange[1] || 18900000,
+	props.store.draftFilters.priceRange[0] ||
+		props.store.priceRange[0] ||
+		5500000,
+	props.store.draftFilters.priceRange[1] ||
+		props.store.priceRange[1] ||
+		18900000,
 ]);
 const areaRange = ref<[number, number]>([
-	apartmentsStore.draftFilters.areaRange[0] || apartmentsStore.areaRange[0] || 33,
-	apartmentsStore.draftFilters.areaRange[1] || apartmentsStore.areaRange[1] || 123,
+	props.store.draftFilters.areaRange[0] || props.store.areaRange[0] || 33,
+	props.store.draftFilters.areaRange[1] || props.store.areaRange[1] || 123,
 ]);
 
-const minPrice = computed(() => apartmentsStore.priceRange[0] || 5500000);
-const maxPrice = computed(() => apartmentsStore.priceRange[1] || 18900000);
-const minArea = computed(() => apartmentsStore.areaRange[0] || 33);
-const maxArea = computed(() => apartmentsStore.areaRange[1] || 123);
+const allPossibleRooms = [1, 2, 3, 4]; 
 
-const priceStep = computed(() => Math.max(1000, Math.round((maxPrice.value - minPrice.value) / 100)));
-const areaStep = computed(() => Math.max(1, Math.round((maxArea.value - minArea.value) / 100)));
 
-const formatPrice = (price: number): string => new Intl.NumberFormat('ru-RU').format(price);
 
-const toggleRoom = (room: number) => {
+const minPrice = computed(() => props.store.priceRange[0] || 5500000);
+const maxPrice = computed(() => props.store.priceRange[1] || 18900000);
+const minArea = computed(() => props.store.areaRange[0] || 33);
+const maxArea = computed(() => props.store.areaRange[1] || 123);
+
+const priceStep = computed(() =>
+	Math.max(1000, Math.round((maxPrice.value - minPrice.value) / 100))
+);
+const areaStep = computed(() =>
+	Math.max(1, Math.round((maxArea.value - minArea.value) / 100))
+);
+
+
+const formatPrice = (price: number): string =>
+	new Intl.NumberFormat('ru-RU').format(price);
+
+
+const toggleRoom = async (room: number) => {
+	if (props.store.isFiltering) return;
+
 	const index = selectedRooms.value.indexOf(room);
-	if (index > -1) selectedRooms.value.splice(index, 1);
-	else selectedRooms.value.push(room);
-	apartmentsStore.setDraftFilters({ rooms: [...selectedRooms.value] });
+	if (index > -1) {
+		selectedRooms.value.splice(index, 1);
+	} else {
+		selectedRooms.value.push(room);
+		await props.store.ensureRoomsLoaded([room]);
+	}
+
+	props.store.setDraftFilters({ rooms: [...selectedRooms.value] });
+
+	nextTick(() => {
+		props.store.commitFilters();
+	});
 };
 
-const commitPrice = () => apartmentsStore.commitFilters();
-const commitArea = () => apartmentsStore.commitFilters();
+const commitPriceFilter = () => {
+	if (props.store.isFiltering) return;
+	props.store.commitFilters();
+};
 
-const resetFilters = () => {
+const commitAreaFilter = () => {
+	if (props.store.isFiltering) return;
+	props.store.commitFilters();
+};
+
+const resetAllFilters = () => {
+	if (props.store.isFiltering) return;
+
 	selectedRooms.value = [];
 	priceRange.value = [minPrice.value, maxPrice.value];
 	areaRange.value = [minArea.value, maxArea.value];
-	apartmentsStore.resetFilters();
+
+	props.store.resetFilters();
 };
 
 let isUpdatingFromStore = false;
 
-watch(priceRange, () => {
-	if (!isUpdatingFromStore) {
-		apartmentsStore.setDraftFilters({
-			priceRange: [...priceRange.value] as [number, number],
-		});
-	}
-}, { deep: true });
+watch(
+	priceRange,
+	newValue => {
+		if (!isUpdatingFromStore && !props.store.isFiltering) {
+			props.store.setDraftFilters({
+				priceRange: [...newValue] as [number, number],
+			});
+		}
+	},
+	{ deep: true }
+);
 
-watch(areaRange, () => {
-	if (!isUpdatingFromStore) {
-		apartmentsStore.setDraftFilters({
-			areaRange: [...areaRange.value] as [number, number],
-		});
-	}
-}, { deep: true });
+watch(
+	areaRange,
+	newValue => {
+		if (!isUpdatingFromStore && !props.store.isFiltering) {
+			props.store.setDraftFilters({
+				areaRange: [...newValue] as [number, number],
+			});
+		}
+	},
+	{ deep: true }
+);
 
-watch(() => apartmentsStore.priceRange, newPriceRange => {
-	if (newPriceRange[0] && newPriceRange[1]) {
-		isUpdatingFromStore = true;
-		priceRange.value = [newPriceRange[0], newPriceRange[1]];
-		isUpdatingFromStore = false;
+watch(
+	() => props.store.priceRange,
+	newValue => {
+		if (newValue[0] && newValue[1]) {
+			isUpdatingFromStore = true;
+			priceRange.value = [newValue[0], newValue[1]];
+			nextTick(() => {
+				isUpdatingFromStore = false;
+			});
+		}
 	}
-});
+);
 
-watch(() => apartmentsStore.areaRange, newAreaRange => {
-	if (newAreaRange[0] && newAreaRange[1]) {
-		isUpdatingFromStore = true;
-		areaRange.value = [newAreaRange[0], newAreaRange[1]];
-		isUpdatingFromStore = false;
+watch(
+	() => props.store.areaRange,
+	newValue => {
+		if (newValue[0] && newValue[1]) {
+			isUpdatingFromStore = true;
+			areaRange.value = [newValue[0], newValue[1]];
+			nextTick(() => {
+				isUpdatingFromStore = false;
+			});
+		}
 	}
-});
+);
+
+watch(
+	() => props.store.draftFilters.rooms,
+	newValue => {
+		if (!isUpdatingFromStore) {
+			selectedRooms.value = [...newValue];
+		}
+	},
+	{ deep: true }
+);
 </script>
 
 <style lang="scss" scoped>
 @use '~/assets/scss/variables' as *;
 
-.filter {
+.filter-optimized {
 	background: $background-primary;
 	border-radius: $border-radius-lg;
 	padding: $spacing-lg;
+	position: relative;
+	transition: opacity 0.2s ease;
 
 	@media (max-width: $breakpoint-desktop) {
 		margin-bottom: $spacing-lg;
 	}
 
-	// Header with main title and reset
-	&__header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: $spacing-lg;
-		padding-bottom: $spacing-md;
-		border-bottom: 1px solid $border-color;
+	&--filtering {
+		pointer-events: none;
+		opacity: 0.7;
 	}
 
-	&__main-title {
+	&__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: $spacing-lg;
+	}
+
+	&__title {
 		font-size: $font-size-lg;
 		font-weight: $font-weight-bold;
 		color: $text-primary;
@@ -220,30 +270,10 @@ watch(() => apartmentsStore.areaRange, newAreaRange => {
 		font-family: $font-family;
 	}
 
-	&__reset-all {
-		background: none;
-		border: 1px solid $accent;
-		color: $accent;
-		padding: calc($spacing-xs / 2) $spacing-sm;
-		border-radius: $border-radius-sm;
-		font-size: $font-size-xs;
-		font-weight: $font-weight-medium;
-		cursor: pointer;
-		transition: all $transition-fast;
-		font-family: $font-family;
-
-		&:hover {
-			background: $accent;
-			color: $surface;
-		}
-
-		&:focus {
-			outline: 2px solid $accent;
-			outline-offset: 2px;
-		}
+	&__spinner {
+		flex-shrink: 0;
 	}
 
-	// Section containing filter groups
 	&__section {
 		margin-bottom: $spacing-xl;
 
@@ -252,21 +282,34 @@ watch(() => apartmentsStore.areaRange, newAreaRange => {
 		}
 	}
 
-	&__rooms-buttons {
-		display: flex;
-		gap: $spacing-sm;
-		flex-wrap: wrap;
-	}
-
-	&__title {
+	&__section-title {
 		font-size: $font-size-base;
-		font-weight: $font-weight-medium;
+		font-weight: $font-weight-regular;
 		color: $text-primary;
 		margin: 0 0 $spacing-md 0;
 		font-family: $font-family;
 	}
 
-	&__range {
+	&__rooms {
+		display: flex;
+		gap: $spacing-sm;
+		flex-wrap: wrap;
+
+		&__room-button {
+			padding: $spacing-xs $spacing-sm;
+			border: 1px solid $border-color;
+			border-radius: $border-radius-sm;
+			background: transparent;
+			color: $text-primary;
+			cursor: pointer;
+
+			&:hover {
+				background: darken($background-light, 5%);
+			}
+		}
+	}
+
+	&__range-labels {
 		display: flex;
 		justify-content: space-between;
 		margin-bottom: $spacing-sm;
@@ -276,7 +319,6 @@ watch(() => apartmentsStore.areaRange, newAreaRange => {
 		font-size: $font-size-sm;
 		color: $text-secondary;
 		font-family: $font-family;
-		font-weight: $font-weight-medium;
 
 		&--min {
 			color: $accent;
@@ -287,107 +329,59 @@ watch(() => apartmentsStore.areaRange, newAreaRange => {
 		}
 	}
 
-	// Footer with main reset button
-	&__footer {
+	&__actions {
+		margin-top: $spacing-lg;
 		padding-top: $spacing-md;
 		border-top: 1px solid $border-color;
 	}
 
 	&__reset {
 		width: 100%;
-		background: transparent;
-		border: 1px solid $border-color;
-		color: $text-secondary;
-		padding: $spacing-sm $spacing-md;
-		border-radius: $border-radius-md;
-		font-size: $font-size-sm;
-		font-weight: $font-weight-medium;
-		cursor: pointer;
-		transition: all $transition-fast;
-		font-family: $font-family;
-
-		&:hover:not(:disabled) {
-			border-color: $accent;
-			color: $accent;
-		}
-
-		&:focus {
-			outline: 2px solid $accent;
-			outline-offset: 2px;
-		}
-
-		&:disabled {
-			opacity: 0.5;
-			cursor: not-allowed;
-		}
 	}
 }
 
-// Screen reader only content
-.sr-only {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	padding: 0;
-	margin: -1px;
-	overflow: hidden;
-	clip: rect(0, 0, 0, 0);
-	white-space: nowrap;
-	border: 0;
+.spinner-fade-enter-active,
+.spinner-fade-leave-active {
+	transition: opacity 0.2s ease;
 }
 
-// High contrast mode support
-@media (prefers-contrast: high) {
-	.filter {
-		border: 2px solid $text-primary;
-
-		&__header {
-			border-bottom-width: 2px;
-		}
-
-		&__footer {
-			border-top-width: 2px;
-		}
-
-		&__reset-all,
-		&__reset {
-			border-width: 2px;
-		}
-	}
+.spinner-fade-enter-from,
+.spinner-fade-leave-to {
+	opacity: 0;
 }
 
-// Reduced motion support
-@media (prefers-reduced-motion: reduce) {
-	.filter {
-		&__reset-all,
-		&__reset {
-			transition: none;
-		}
-	}
-}
-
-// Mobile adaptations
 @include mobile {
-	.filter {
+	.filter-optimized {
 		padding: $spacing-md;
-
-		&__header {
-			flex-direction: column;
-			align-items: stretch;
-			gap: $spacing-sm;
-		}
-
-		&__reset-all {
-			align-self: flex-end;
-		}
-
-		&__rooms-buttons {
-			gap: $spacing-xs;
-		}
 
 		&__section {
 			margin-bottom: $spacing-lg;
 		}
+
+		&__rooms {
+			gap: $spacing-xs;
+		}
+
+		&__range-labels {
+			font-size: $font-size-xs;
+		}
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.filter-optimized {
+		transition: none;
+	}
+
+	.spinner-fade-enter-active,
+	.spinner-fade-leave-active {
+		transition: none;
+	}
+}
+
+@media (prefers-contrast: high) {
+	.filter-optimized {
+		border: 2px solid $text-primary;
 	}
 }
 </style>

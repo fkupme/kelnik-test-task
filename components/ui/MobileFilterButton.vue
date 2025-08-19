@@ -110,7 +110,6 @@ const handleClick = () => {
 		color: $accent;
 	}
 
-	// Показываем только на мобильных устройствах
 	@include mobile {
 		display: flex;
 	}

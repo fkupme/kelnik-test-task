@@ -23,10 +23,9 @@
 }
 
 html {
-
 	font-size: 16px;
 	scroll-behavior: smooth;
-
+  overflow: scroll;
 	@include tablet {
 		font-size: 14px;
 	}
@@ -46,12 +45,30 @@ body {
 	-moz-osx-font-smoothing: grayscale;
 }
 
+*::-webkit-scrollbar {
+	width: 6px; 
+	height: 12px;
+}
+*::-webkit-scrollbar-track {
+	background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+	background: $accent;
+  border-radius: 30px;
+}
+*::-webkit-scrollbar-thumb:hover {
+	background: transparent;
+}
+
+
 .container {
 	margin: 0 auto;
 	padding: 0 $container-padding;
-
-	@media (max-width: $breakpoint-tablet) {
-		padding: 0 $spacing-md;
+  @include tablet {
+		padding: 0 $container-padding-tablet;
+	}
+	@include mobile {
+		padding: 0 $container-padding-mobile;
 	}
 }
 
@@ -75,11 +92,11 @@ body {
 		color: $white;
 
 		&:hover {
-			background-color: color-mix(in srgb, $button-color 90%, black);
+			background-color: darken($button-color, 5%);
 		}
 
 		&:active {
-			background-color: color-mix(in srgb, $button-color 85%, black);
+			background-color: darken($button-color, 8%);
 		}
 	}
 
@@ -93,7 +110,7 @@ body {
 		}
 
 		&:active {
-			background-color: color-mix(in srgb, $background-light 95%, black);
+			background-color: darken($background-light, 3%);
 		}
 	}
 

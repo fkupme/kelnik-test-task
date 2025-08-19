@@ -1,29 +1,24 @@
 <template>
 	<NuxtLayout name="main">
-		<!-- Use optimized components for better performance -->
-		<ViewApartmentsOptimized />
+		<ViewApartments />
 	</NuxtLayout>
 </template>
 
 <script setup lang="ts">
-// Import the optimized store with hash-based performance improvements
-const apartmentsStore = useOptimizedApartmentsStore();
 
-// Initialize store with cached filters and data
+const apartmentsStore = useApartmentsStore();
+
 onMounted(async () => {
 	await apartmentsStore.init();
 });
 
-// Enhanced SEO meta for better search visibility
 useSeoMeta({
-	title: 'Квартиры - Быстрый поиск и фильтрация недвижимости',
+	title: 'Квартиры - Поиск и покупка недвижимости',
 	description:
-		'Оптимизированный каталог квартир с мгновенной фильтрацией без задержек. Улучшенная производительность и удобство использования.',
-	ogTitle: 'Квартиры - Быстрый поиск и фильтрация недвижимости',
+		'Найдите идеальную квартиру из нашего каталога. Удобный поиск и фильтрация по параметрам с улучшенной производительностью.',
+	ogTitle: 'Квартиры - Поиск и покупка недвижимости',
 	ogDescription:
-		'Оптимизированный каталог квартир с мгновенной фильтрацией без задержек. Улучшенная производительность и удобство использования.',
-	keywords: 'квартиры, недвижимость, быстрый поиск, оптимизированные фильтры, производительность',
-	robots: 'index, follow',
-	author: 'Senior Developer',
+		'Найдите идеальную квартиру из нашего каталога. Удобный поиск и фильтрация по параметрам с улучшенной производительностью.',
+	keywords: 'квартиры, недвижимость, покупка, аренда, поиск квартир, фильтры',
 });
 </script>
