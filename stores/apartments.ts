@@ -3,11 +3,8 @@ import type { Apartment, FilterState, PaginationState } from '~/types';
 
  
 export const useApartmentsStore = defineStore('apartments', () => {
-	// Референсные сущности (id -> объект). Обновляем in-place, не пересоздаём массив объектов
 	const entities = reactive<Record<string, Apartment>>({});
-	// Текущий порядок id для отображения
 	const currentIds = ref<string[]>([]);
-	// Устаревшее: прямой массив; оставляем для совместимости (computed)
 	const apartments = computed<Apartment[]>(() =>
 		currentIds.value.map(id => entities[id]).filter((x): x is Apartment => !!x)
 	);
@@ -35,7 +32,6 @@ export const useApartmentsStore = defineStore('apartments', () => {
 		hasMore: true,
 	});
 
-	// Диапазоны приходят из API при полном reset
 	const priceRange = ref<[number, number]>([5500000, 18900000]);
 	const areaRange = ref<[number, number]>([33, 123]);
 
@@ -44,7 +40,6 @@ export const useApartmentsStore = defineStore('apartments', () => {
 	const isFiltering = ref(false);
 	const error = ref<string | null>(null);
 
-	// Для UI
 	const filteredApartments = computed(() => apartments.value);
 
 	const querySignature = computed(
@@ -84,7 +79,6 @@ export const useApartmentsStore = defineStore('apartments', () => {
 		return c;
 	});
 
-	// Upsert батч: возвращает массив id
 	const upsertBatch = (batch: Apartment[]): string[] => {
 		const ids: string[] = [];
 		for (const apt of batch) {
@@ -102,7 +96,6 @@ export const useApartmentsStore = defineStore('apartments', () => {
 	const syncResetList = (allBatches: Apartment[][]) => {
 		const flat = allBatches.flat();
 		const ids = upsertBatch(flat);
-		// Формируем новый порядок, но сохраняем стабильность для уже существующих id (Vue diff по key)
 		currentIds.value = ids;
 	};
 
@@ -126,7 +119,6 @@ export const useApartmentsStore = defineStore('apartments', () => {
 			syncResetList(pagesSorted);
 		} else {
 			const newIds = upsertBatch(batch);
-			// Добавляем только те id, которых ещё нет в currentIds
 			const existingSet = new Set(currentIds.value);
 			let appended = false;
 			for (const id of newIds) {
@@ -134,9 +126,6 @@ export const useApartmentsStore = defineStore('apartments', () => {
 					currentIds.value.push(id);
 					appended = true;
 				}
-			}
-			if (appended) {
-				// currentIds.value уже обновлён in-place; Vue увидит push => отрендерит только новые карточки
 			}
 		}
 	};
@@ -159,16 +148,9 @@ export const useApartmentsStore = defineStore('apartments', () => {
 	};
 
 	const loadApartments = async (reset = true) => {
-		console.debug('[apartments] loadApartments start', {
-			reset,
-			currentPage: pagination.value.currentPage,
-			hasMore: pagination.value.hasMore,
-			sig: querySignature.value,
-		});
 		const sig = querySignature.value;
 		const cacheEntry = cache.get(sig);
 		if (reset && cacheEntry && cacheEntry.complete) {
-			console.debug('[apartments] use full cache for signature (no fetch)');
 			const pagesSorted = [...cacheEntry.pages.entries()]
 				.sort((a, b) => a[0] - b[0])
 				.map(p => p[1]);
@@ -184,11 +166,9 @@ export const useApartmentsStore = defineStore('apartments', () => {
 				pagination.value.currentPage = 0;
 				pagination.value.hasMore = true;
 			}
-			const offset =
-				pagination.value.currentPage * pagination.value.itemsPerPage;
+			const offset = pagination.value.currentPage * pagination.value.itemsPerPage;
 			const pageIndex = pagination.value.currentPage;
 			if (!reset && cacheEntry && cacheEntry.pages.has(pageIndex)) {
-				console.debug('[apartments] page from cache', { pageIndex });
 				const batchCached = cacheEntry.pages.get(pageIndex)!;
 				updateCacheAndList(batchCached, false, pageIndex);
 				pagination.value.currentPage++;
@@ -196,17 +176,8 @@ export const useApartmentsStore = defineStore('apartments', () => {
 				return;
 			}
 			const url = buildQuery(offset, pagination.value.itemsPerPage);
-			console.debug('[apartments] fetch($fetch)', { url });
 			const response: any = await $fetch(url);
-			console.debug('[apartments] response meta', {
-				total: response?.total,
-				batch: Array.isArray(response?.apartments)
-					? response.apartments.length
-					: 'NA',
-			});
-			const batch: Apartment[] = Array.isArray(response?.apartments)
-				? response.apartments
-				: [];
+			const batch: Apartment[] = Array.isArray(response?.apartments) ? response.apartments : [];
 			if (reset) {
 				pagination.value.totalItems = Number(response?.total) || batch.length;
 				if (
@@ -233,19 +204,12 @@ export const useApartmentsStore = defineStore('apartments', () => {
 			entry.priceRange = priceRange.value;
 			entry.areaRange = areaRange.value;
 			entry.complete = !pagination.value.hasMore;
-			console.debug('[apartments] pagination update', {
-				currentPage: pagination.value.currentPage,
-				loaded: apartments.value.length,
-				total: pagination.value.totalItems,
-				hasMore: pagination.value.hasMore,
-			});
 			if (!pagination.value.hasMore) {
 				lastLoadedSignature.value = querySignature.value;
 				lastLoadedTotal.value = currentIds.value.length;
 			}
 		} catch (e) {
 			error.value = 'Ошибка загрузки данных';
-			console.error('[apartments] load error', e);
 		} finally {
 			isLoading.value = false;
 			isAppending.value = false;
@@ -316,7 +280,7 @@ export const useApartmentsStore = defineStore('apartments', () => {
 				changed = true;
 			}
 		}
-		if (!changed) return; // ничего не поменялось – не запрашиваем
+		if (!changed) return;
 		isFiltering.value = true;
 		loadApartments(true);
 	};
@@ -334,7 +298,6 @@ export const useApartmentsStore = defineStore('apartments', () => {
 		loadApartments(true);
 	};
 
-	// Инициализация (вызвать из компонента layout/page)
 	const initialized = ref(false);
 	const init = async () => {
 		if (initialized.value) return;
@@ -356,7 +319,6 @@ export const useApartmentsStore = defineStore('apartments', () => {
 		priceRange,
 		areaRange,
 		activeFiltersCount,
-		// methods
 		init,
 		loadApartments,
 		loadMore,

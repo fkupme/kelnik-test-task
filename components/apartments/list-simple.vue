@@ -62,7 +62,7 @@ const apartments = computed(() => props.apartments);
 
 const loadMore = () => {
 	if (!store.isLoading && !store.isAppending && store.pagination.hasMore) {
-		store.loadApartments(false); // append = true (false означает не reset, а добавление)
+		store.loadApartments(false);
 	}
 };
 </script>

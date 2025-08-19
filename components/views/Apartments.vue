@@ -76,17 +76,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useApartmentsStore } from '../../stores/apartments';
 
-// MVVM: подключаем ViewModel (store)
 const apartmentsStore = useApartmentsStore();
-
-// Mobile filter bottom sheet state
 const showMobileFilter = ref(false);
 
-// Sort headers configuration
-// Первые два – просто статические блоки (заглушки), не сортируются и скрываются на планшетах/мобильных
 const sortHeaders = [
 	{ key: 'plan', label: 'Планировка', sortable: false },
 	{ key: 'name', label: 'Квартира', sortable: false },
@@ -96,14 +91,12 @@ const sortHeaders = [
 ];
 
 const openMobileFilter = () => {
-	try {
-		console.log('Opening mobile filter');
-		showMobileFilter.value = true;
-		console.log('Mobile filter state:', showMobileFilter.value);
-	} catch (error) {
-		console.error('Error opening mobile filter:', error);
-	}
+	showMobileFilter.value = true;
 };
+
+onMounted(() => {
+	apartmentsStore.init();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -209,7 +202,5 @@ const openMobileFilter = () => {
 			gap: $spacing-md;
 		}
 	}
-
-	// load-more удалён (виртуализация)
 }
 </style>

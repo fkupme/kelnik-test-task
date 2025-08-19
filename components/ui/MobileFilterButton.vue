@@ -43,12 +43,7 @@ const emit = defineEmits<{
 }>();
 
 const handleClick = () => {
-	try {
-		console.log('Mobile filter button clicked');
-		emit('click');
-	} catch (error) {
-		console.error('Error in mobile filter button click:', error);
-	}
+	emit('click');
 };
 </script>
 
