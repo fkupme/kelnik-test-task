@@ -165,7 +165,7 @@ const loadMore = () => {
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background: rgba($background-primary, 0.8);
+		background: rgba(248, 249, 250, 0.8);
 		backdrop-filter: blur(2px);
 		z-index: 10;
 		border-radius: $border-radius-lg;
@@ -278,7 +278,7 @@ const loadMore = () => {
 @media (prefers-color-scheme: dark) {
 	.apartment-list-optimized {
 		&__filtering {
-			background: rgba(darken($background-primary, 10%), 0.8);
+			background: rgba(240, 242, 245, 0.8);
 		}
 	}
 }

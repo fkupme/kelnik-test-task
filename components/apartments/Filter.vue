@@ -106,9 +106,13 @@ import { useApartmentsStore } from '../../stores/apartments';
 
 const apartmentsStore = useApartmentsStore();
 
-const allPossibleRooms = computed(() => [1, 2, 3, 4]);
-
 const availableRooms = computed(() => {
+	if (apartmentsStore.apartments.length === 0) return [1, 2, 3, 4];
+	const rooms = [...new Set(apartmentsStore.apartments.map(apt => apt.rooms))];
+	return rooms.sort((a: number, b: number) => a - b);
+});
+
+const allPossibleRooms = computed(() => {
 	if (apartmentsStore.apartments.length === 0) return [1, 2, 3, 4];
 	const rooms = [...new Set(apartmentsStore.apartments.map(apt => apt.rooms))];
 	return rooms.sort((a: number, b: number) => a - b);
@@ -383,49 +387,6 @@ watch(() => apartmentsStore.areaRange, newAreaRange => {
 
 		&__section {
 			margin-bottom: $spacing-lg;
-		}
-	}
-}
-
-	&__title {
-		font-size: $font-size-base;
-		font-weight: $font-weight-regular;
-		color: $text-primary;
-		margin-bottom: $spacing-md;
-		font-family: $font-family;
-	}
-
-	&__range {
-		display: flex;
-		justify-content: space-between;
-		margin-bottom: $spacing-md;
-	}
-
-	&__range-label {
-		font-size: $font-size-sm;
-		color: $text-secondary;
-		font-family: $font-family;
-	}
-
-	&__reset {
-		width: 100%;
-		padding: $spacing-sm;
-		background: transparent;
-		border: none;
-		color: $text-secondary;
-		font-family: $font-family;
-		font-size: $font-size-sm;
-		cursor: pointer;
-		text-decoration: underline;
-		transition: $transition-fast;
-
-		&:hover {
-			color: $text-primary;
-		}
-
-		&:focus {
-			outline: 2px solid $accent;
-			outline-offset: 2px;
 		}
 	}
 }
