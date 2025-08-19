@@ -38,7 +38,7 @@
 				<div v-else-if="apartmentsStore.error" class="apartments-view__error">
 					<p class="apartments-view__error-text">{{ apartmentsStore.error }}</p>
 					<UIControlsButton
-						@click="apartmentsStore.loadApartments"
+						@click="() => apartmentsStore.loadApartments()"
 						variant="primary"
 					>
 						Попробовать снова
@@ -47,7 +47,7 @@
 
 				<!-- Empty State -->
 				<div
-					v-else-if="apartmentsStore.filteredApartments.length === 0"
+					v-else-if="apartmentsStore.visibleApartments.length === 0"
 					class="apartments-view__empty"
 				>
 					<p class="apartments-view__empty-text">Квартиры не найдены</p>
@@ -62,7 +62,7 @@
 				<!-- Apartments List -->
 				<div v-else class="apartments-view__apartments">
 					<ApartmentListSimple
-						:apartments="apartmentsStore.filteredApartments"
+						:apartments="[...apartmentsStore.visibleApartments]"
 					/>
 				</div>
 			</section>

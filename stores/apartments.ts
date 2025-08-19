@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 import type { Apartment, FilterState, PaginationState } from '~/types';
 
- 
 export const useApartmentsStore = defineStore('apartments', () => {
 	const entities = reactive<Record<string, Apartment>>({});
 	const currentIds = ref<string[]>([]);
@@ -40,7 +39,38 @@ export const useApartmentsStore = defineStore('apartments', () => {
 	const isFiltering = ref(false);
 	const error = ref<string | null>(null);
 
-	const filteredApartments = computed(() => apartments.value);
+	// Геттер: клиентская фильтрация по appliedFilters поверх накопленного супермножества
+	const matchesFilters = (apt: Apartment, f: FilterState) => {
+		if (f.rooms.length && !f.rooms.includes(apt.rooms)) return false;
+		if (apt.price < f.priceRange[0] || apt.price > f.priceRange[1])
+			return false;
+		if (apt.area < f.areaRange[0] || apt.area > f.areaRange[1]) return false;
+		return true;
+	};
+
+	const filteredIds = computed(() =>
+		currentIds.value.filter(id => {
+			const apt = entities[id];
+			return apt ? matchesFilters(apt, appliedFilters) : false;
+		})
+	);
+
+	const visibleApartments = computed<Apartment[]>(() => {
+		let arr: (Apartment | undefined)[] = filteredIds.value.map(
+			id => entities[id]
+		);
+		if (sort.value.field) {
+			const field = sort.value.field as keyof Apartment;
+			const dir = sort.value.direction === 'asc' ? 1 : -1;
+			arr = [...arr].sort((a: any, b: any) => {
+				const av = a?.[field];
+				const bv = b?.[field];
+				if (av === bv) return 0;
+				return av > bv ? dir : -dir;
+			});
+		}
+		return arr.filter((x): x is Apartment => !!x);
+	});
 
 	const querySignature = computed(
 		() =>
@@ -104,6 +134,7 @@ export const useApartmentsStore = defineStore('apartments', () => {
 		isReset: boolean,
 		pageIndex: number
 	) => {
+		// НЕ очищаем глобальные entities – копим супермножество
 		const sig = querySignature.value;
 		let entry = cache.get(sig);
 		if (!entry) {
@@ -112,22 +143,11 @@ export const useApartmentsStore = defineStore('apartments', () => {
 		}
 		if (isReset) entry.pages = new Map();
 		entry.pages.set(pageIndex, batch);
-		if (isReset) {
-			const pagesSorted = [...entry.pages.entries()]
-				.sort((a, b) => a[0] - b[0])
-				.map(p => p[1]);
-			syncResetList(pagesSorted);
-		} else {
-			const newIds = upsertBatch(batch);
-			const existingSet = new Set(currentIds.value);
-			let appended = false;
-			for (const id of newIds) {
-				if (!existingSet.has(id)) {
-					currentIds.value.push(id);
-					appended = true;
-				}
-			}
-		}
+		const newIds = upsertBatch(batch);
+		// Добавляем новые id в общий список (стабильный порядок: впервые увиденный в конец)
+		const existingSet = new Set(currentIds.value);
+		for (const id of newIds)
+			if (!existingSet.has(id)) currentIds.value.push(id);
 	};
 
 	const buildQuery = (offset: number, limit: number) => {
@@ -150,11 +170,8 @@ export const useApartmentsStore = defineStore('apartments', () => {
 	const loadApartments = async (reset = true) => {
 		const sig = querySignature.value;
 		const cacheEntry = cache.get(sig);
+		// При reset НЕ чистим глобальный список; просто если всё есть – можно пропустить fetch
 		if (reset && cacheEntry && cacheEntry.complete) {
-			const pagesSorted = [...cacheEntry.pages.entries()]
-				.sort((a, b) => a[0] - b[0])
-				.map(p => p[1]);
-			syncResetList(pagesSorted);
 			pagination.value.totalItems = cacheEntry.total;
 			pagination.value.hasMore = false;
 			return;
@@ -166,7 +183,8 @@ export const useApartmentsStore = defineStore('apartments', () => {
 				pagination.value.currentPage = 0;
 				pagination.value.hasMore = true;
 			}
-			const offset = pagination.value.currentPage * pagination.value.itemsPerPage;
+			const offset =
+				pagination.value.currentPage * pagination.value.itemsPerPage;
 			const pageIndex = pagination.value.currentPage;
 			if (!reset && cacheEntry && cacheEntry.pages.has(pageIndex)) {
 				const batchCached = cacheEntry.pages.get(pageIndex)!;
@@ -177,7 +195,9 @@ export const useApartmentsStore = defineStore('apartments', () => {
 			}
 			const url = buildQuery(offset, pagination.value.itemsPerPage);
 			const response: any = await $fetch(url);
-			const batch: Apartment[] = Array.isArray(response?.apartments) ? response.apartments : [];
+			const batch: Apartment[] = Array.isArray(response?.apartments)
+				? response.apartments
+				: [];
 			if (reset) {
 				pagination.value.totalItems = Number(response?.total) || batch.length;
 				if (
@@ -193,9 +213,7 @@ export const useApartmentsStore = defineStore('apartments', () => {
 				)
 					areaRange.value = [response.areaMin, response.areaMax];
 				updateCacheAndList(batch, true, pageIndex);
-			} else {
-				updateCacheAndList(batch, false, pageIndex);
-			}
+			} else updateCacheAndList(batch, false, pageIndex);
 			pagination.value.currentPage++;
 			const total = Number(response?.total) || currentIds.value.length;
 			pagination.value.hasMore = currentIds.value.length < total;
@@ -282,7 +300,8 @@ export const useApartmentsStore = defineStore('apartments', () => {
 		}
 		if (!changed) return;
 		isFiltering.value = true;
-		loadApartments(true);
+		// Сортировка теперь чисто клиентская (не дергаем сеть)
+		// loadApartments(true); // если нужна серверная – раскомментировать
 	};
 	const resetFilters = () => {
 		assignArr(draftFilters.rooms, []);
@@ -306,8 +325,8 @@ export const useApartmentsStore = defineStore('apartments', () => {
 	};
 
 	return {
-		apartments: readonly(apartments),
-		filteredApartments: readonly(filteredApartments),
+		apartments: readonly(apartments), // все загруженные (супермножество)
+		visibleApartments: readonly(visibleApartments), // итог после клиентских фильтров + сортировки
 		isLoading: readonly(isLoading),
 		isAppending: readonly(isAppending),
 		isFiltering: readonly(isFiltering),
