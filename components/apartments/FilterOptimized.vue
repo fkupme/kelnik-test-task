@@ -234,7 +234,7 @@ watch(() => props.store.draftFilters.rooms, (newValue) => {
 </script>
 
 <style lang="scss" scoped>
-@import '~/assets/scss/variables';
+@use '~/assets/scss/variables' as *;
 
 .filter-optimized {
 	background: $background-primary;

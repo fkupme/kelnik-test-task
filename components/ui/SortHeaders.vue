@@ -90,7 +90,7 @@ const handleSort = (field: string) => {
 </script>
 
 <style lang="scss" scoped>
-@import '~/assets/scss/variables';
+@use '~/assets/scss/variables' as *;
 
 .sort-headers {
 	padding-inline-start: 10px;

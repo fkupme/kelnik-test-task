@@ -48,7 +48,7 @@ const handleClick = () => {
 </script>
 
 <style lang="scss" scoped>
-@import '~/assets/scss/variables';
+@use '~/assets/scss/variables' as *;
 
 .mobile-filter-button {
 	display: none;

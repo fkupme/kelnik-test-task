@@ -188,7 +188,7 @@ useSeoMeta({
 </script>
 
 <style lang="scss" scoped>
-@import '~/assets/scss/variables';
+@use '~/assets/scss/variables' as *;
 
 .apartments-view-optimized {
 	&__header {
@@ -288,7 +288,7 @@ useSeoMeta({
 		gap: $spacing-xs;
 		margin-bottom: $spacing-lg;
 		padding: $spacing-sm $spacing-md;
-		background: lighten($background-primary, 2%);
+		background: rgba(#f8f9fa, 0.5);
 		border-radius: $border-radius-md;
 		border-left: 4px solid $accent;
 
@@ -449,7 +449,7 @@ useSeoMeta({
 		&__stats {
 			flex-direction: column;
 			align-items: flex-start;
-			gap: $spacing-xs / 2;
+			gap: calc($spacing-xs / 2);
 		}
 	}
 }
