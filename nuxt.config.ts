@@ -18,6 +18,14 @@ export default defineNuxtConfig({
 			},
 		},
 	},
+  components:[
+    {path:'~/components/views', prefix: 'View', pathPrefix: true }, 
+    { path: '~/components/ui', prefix: 'UI',pathPrefix: true },
+    // { path: '~/components/ui/controls', prefix: 'Controls', pathPrefix: true },
+    // { path: '~/components/ui/feedback', prefix: 'Feedback', pathPrefix: true },
+    // { path: '~/components/ui/cards', prefix: 'Card', pathPrefix: true },
+    { path: '~/components/apartments', prefix: 'Apartment', pathPrefix: true }
+  ],
 
 	typescript: {
 		typeCheck: false,

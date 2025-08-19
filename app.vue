@@ -1,120 +1,48 @@
 <template>
-	<div id="app">
-		<main class="main">
-			<div class="container">
-				<header class="header">
-					<h1 class="header__title">Квартиры</h1>
-				</header>
-
-				<div class="content">
-					<ApartmentFilter class="content__filter" />
-
-					<section class="content__apartments">
-						<div v-if="apartmentsStore.isLoading" class="apartments__loading">
-							<div class="loading-spinner" aria-label="Загрузка квартир">
-								<div class="spinner"></div>
-							</div>
-						</div>
-
-						<div v-else-if="apartmentsStore.error" class="apartments__error">
-							<p>{{ apartmentsStore.error }}</p>
-							<button
-								@click="apartmentsStore.loadApartments"
-								class="btn btn--primary"
-							>
-								Попробовать снова
-							</button>
-						</div>
-
-						<div
-							v-else-if="apartmentsStore.displayedApartments.length === 0"
-							class="apartments__empty"
-						>
-							<p>Квартиры не найдены</p>
-							<button
-								@click="apartmentsStore.resetFilters"
-								class="btn btn--secondary"
-							>
-								Сбросить фильтры
-							</button>
-						</div>
-
-						<div v-else class="apartments__list">
-							<ApartmentCard
-								v-for="apartment in apartmentsStore.displayedApartments"
-								:key="apartment.id"
-								:apartment="apartment"
-								class="apartments__item"
-							/>
-
-							<div
-								v-if="apartmentsStore.pagination.hasMore"
-								class="apartments__load-more"
-							>
-								<button
-									@click="apartmentsStore.loadMore"
-									:disabled="apartmentsStore.isLoading"
-									class="btn btn--secondary"
-								>
-									{{
-										apartmentsStore.isLoading ? 'Загрузка...' : 'Загрузить еще'
-									}}
-								</button>
-							</div>
-						</div>
-					</section>
-				</div>
-			</div>
-		</main>
-
-		<ScrollToTop />
-	</div>
+	<NuxtPage />
 </template>
 
 <script setup lang="ts">
-const apartmentsStore = useApartmentsStore();
-
-onMounted(async () => {
-	await apartmentsStore.loadApartments();
-});
+// Начальная загрузка перенесена в pages/index.vue во избежание двойного reset.
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .main {
 	min-height: 100vh;
-	padding: 24px 0;
+	padding: $spacing-lg 0;
 }
 
 .header {
-	margin-bottom: 48px;
+	margin-bottom: $spacing-xxl;
 
 	&__title {
-		font-size: 32px;
-		font-weight: 700;
-		color: #1a1a1a;
+		font-size: $font-size-xxl;
+		font-weight: $font-weight-bold;
+		color: $text-primary;
 		margin: 0;
+		font-family: $font-family;
 	}
 }
 
 .content {
 	display: grid;
 	grid-template-columns: 300px 1fr;
-	gap: 48px;
+	gap: $spacing-xxl;
 	align-items: start;
 
-	@media (max-width: 960px) {
+	@media (max-width: $breakpoint-desktop) {
 		grid-template-columns: 1fr;
-		gap: 24px;
+		gap: $spacing-lg;
 	}
 
 	&__filter {
-		@media (max-width: 960px) {
+		@media (max-width: $breakpoint-desktop) {
 			order: 2;
 		}
 	}
 
 	&__apartments {
-		@media (max-width: 960px) {
+		@media (max-width: $breakpoint-desktop) {
 			order: 1;
 		}
 	}
@@ -128,25 +56,25 @@ onMounted(async () => {
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		padding: 48px;
+		padding: $spacing-xxl;
 		text-align: center;
 	}
 
 	&__error,
 	&__empty {
-		gap: 16px;
+		gap: $spacing-md;
 	}
 
 	&__list {
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: $spacing-md;
 	}
 
 	&__load-more {
 		display: flex;
 		justify-content: center;
-		margin-top: 24px;
+		margin-top: $spacing-lg;
 	}
 }
 
@@ -159,8 +87,8 @@ onMounted(async () => {
 .spinner {
 	width: 40px;
 	height: 40px;
-	border: 3px solid #e5e5e5;
-	border-top: 3px solid #2e8b57;
+	border: 3px solid $border-color;
+	border-top: 3px solid $accent;
 	border-radius: 50%;
 	animation: spin 1s linear infinite;
 }

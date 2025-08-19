@@ -57,18 +57,18 @@ onMounted(() => {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background-color: $primary-color;
-	color: $white;
+	background-color: $accent;
+	color: $surface;
 	border: none;
 	border-radius: 50%;
 	cursor: pointer;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	box-shadow: 0 4px 12px rgba($text-primary, 0.15);
 	transition: all $transition-fast;
 
 	&:hover {
-		background-color: darken($primary-color, 10%);
+		background-color: darken($accent, 10%);
 		transform: translateY(-2px);
-		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+		box-shadow: 0 6px 16px rgba($text-primary, 0.2);
 	}
 
 	&:active {
@@ -81,7 +81,7 @@ onMounted(() => {
 	}
 
 	&:focus {
-		outline: 2px solid $primary-color;
+		outline: 2px solid $accent;
 		outline-offset: 2px;
 	}
 
