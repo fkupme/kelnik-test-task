@@ -97,7 +97,7 @@ const handleClick = (event: MouseEvent) => {
 
 	// Sizes
 	&--sm {
-		padding: $spacing-xs / 2 $spacing-sm;
+		padding: calc($spacing-xs / 2) $spacing-sm;
 		font-size: $font-size-sm;
 		line-height: 1.4;
 	}
@@ -109,7 +109,7 @@ const handleClick = (event: MouseEvent) => {
 	}
 
 	&--lg {
-		padding: $spacing-md - 2px $spacing-lg - 4px;
+		padding: calc($spacing-md - 2px) calc($spacing-lg - 4px);
 		font-size: $font-size-lg;
 		line-height: 1.5;
 	}
@@ -126,11 +126,11 @@ const handleClick = (event: MouseEvent) => {
 		color: $surface;
 
 		&:hover:not(.button--disabled):not(.button--loading) {
-			background-color: darken($accent, 10%);
+			background-color: color-mix(in srgb, $accent 90%, black);
 		}
 
 		&:active:not(.button--disabled):not(.button--loading) {
-			background-color: darken($accent, 20%);
+			background-color: color-mix(in srgb, $accent 80%, black);
 		}
 	}
 
@@ -140,12 +140,12 @@ const handleClick = (event: MouseEvent) => {
 		border: 1px solid $border-color;
 
 		&:hover:not(.button--disabled):not(.button--loading) {
-			background-color: darken($background-light, 5%);
-			border-color: darken($border-color, 10%);
+			background-color: color-mix(in srgb, $background-light 95%, black);
+			border-color: color-mix(in srgb, $border-color 90%, black);
 		}
 
 		&:active:not(.button--disabled):not(.button--loading) {
-			background-color: darken($background-light, 10%);
+			background-color: color-mix(in srgb, $background-light 90%, black);
 		}
 	}
 
@@ -176,7 +176,7 @@ const handleClick = (event: MouseEvent) => {
 	&--link {
 		background-color: transparent;
 		color: $accent;
-		padding: $spacing-xs / 2 $spacing-xs;
+		padding: calc($spacing-xs / 2) $spacing-xs;
 
 		&:hover:not(.button--disabled):not(.button--loading) {
 			text-decoration: underline;

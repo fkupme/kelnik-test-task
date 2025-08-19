@@ -75,11 +75,11 @@ body {
 		color: $white;
 
 		&:hover {
-			background-color: darken($button-color, 10%);
+			background-color: color-mix(in srgb, $button-color 90%, black);
 		}
 
 		&:active {
-			background-color: darken($button-color, 15%);
+			background-color: color-mix(in srgb, $button-color 85%, black);
 		}
 	}
 
@@ -93,7 +93,7 @@ body {
 		}
 
 		&:active {
-			background-color: darken($background-light, 5%);
+			background-color: color-mix(in srgb, $background-light 95%, black);
 		}
 	}
 
