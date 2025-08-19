@@ -54,15 +54,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useApartmentsStore } from '../../stores/apartments';
 
 const apartmentsStore = useApartmentsStore();
 
-// Все возможные варианты комнат (от 1 до 4)
 const allPossibleRooms = computed(() => [1, 2, 3, 4]);
 
-// Динамически получаем доступные количества комнат из данных
 const availableRooms = computed(() => {
 	if (apartmentsStore.apartments.length === 0) return [1, 2, 3, 4];
 	const rooms = [...new Set(apartmentsStore.apartments.map(apt => apt.rooms))];
@@ -70,46 +68,24 @@ const availableRooms = computed(() => {
 });
 
 const selectedRooms = ref<number[]>([...apartmentsStore.draftFilters.rooms]);
-
-// Динамические диапазоны из store
 const priceRange = ref<[number, number]>([
-	apartmentsStore.draftFilters.priceRange[0] ||
-		apartmentsStore.priceRange[0] ||
-		5500000,
-	apartmentsStore.draftFilters.priceRange[1] ||
-		apartmentsStore.priceRange[1] ||
-		18900000,
+	apartmentsStore.draftFilters.priceRange[0] || apartmentsStore.priceRange[0] || 5500000,
+	apartmentsStore.draftFilters.priceRange[1] || apartmentsStore.priceRange[1] || 18900000,
 ]);
-
 const areaRange = ref<[number, number]>([
-	apartmentsStore.draftFilters.areaRange[0] ||
-		apartmentsStore.areaRange[0] ||
-		33,
-	apartmentsStore.draftFilters.areaRange[1] ||
-		apartmentsStore.areaRange[1] ||
-		123,
+	apartmentsStore.draftFilters.areaRange[0] || apartmentsStore.areaRange[0] || 33,
+	apartmentsStore.draftFilters.areaRange[1] || apartmentsStore.areaRange[1] || 123,
 ]);
 
-// Минимальные и максимальные значения из API
 const minPrice = computed(() => apartmentsStore.priceRange[0] || 5500000);
 const maxPrice = computed(() => apartmentsStore.priceRange[1] || 18900000);
 const minArea = computed(() => apartmentsStore.areaRange[0] || 33);
 const maxArea = computed(() => apartmentsStore.areaRange[1] || 123);
 
-// Динамические шаги для слайдеров
-const priceStep = computed(() => {
-	const range = maxPrice.value - minPrice.value;
-	return Math.max(1000, Math.round(range / 100));
-});
+const priceStep = computed(() => Math.max(1000, Math.round((maxPrice.value - minPrice.value) / 100)));
+const areaStep = computed(() => Math.max(1, Math.round((maxArea.value - minArea.value) / 100)));
 
-const areaStep = computed(() => {
-	const range = maxArea.value - minArea.value;
-	return Math.max(1, Math.round(range / 100));
-});
-
-const formatPrice = (price: number): string => {
-	return new Intl.NumberFormat('ru-RU').format(price);
-};
+const formatPrice = (price: number): string => new Intl.NumberFormat('ru-RU').format(price);
 
 const toggleRoom = (room: number) => {
 	const index = selectedRooms.value.indexOf(room);
@@ -118,7 +94,6 @@ const toggleRoom = (room: number) => {
 	apartmentsStore.setDraftFilters({ rooms: [...selectedRooms.value] });
 };
 
-// Commit по отпусканию слайдера
 const commitPrice = () => apartmentsStore.commitFilters();
 const commitArea = () => apartmentsStore.commitFilters();
 
@@ -129,66 +104,38 @@ const resetFilters = () => {
 	apartmentsStore.resetFilters();
 };
 
-// Флаги для предотвращения рекурсии
 let isUpdatingFromStore = false;
 
-// Watchers для обновления фильтров при изменении ползунков
-watch(
-	priceRange,
-	() => {
-		if (!isUpdatingFromStore) {
-			apartmentsStore.setDraftFilters({
-				priceRange: [...priceRange.value] as [number, number],
-			});
-		}
-	},
-	{ deep: true }
-);
-
-watch(
-	areaRange,
-	() => {
-		if (!isUpdatingFromStore) {
-			apartmentsStore.setDraftFilters({
-				areaRange: [...areaRange.value] as [number, number],
-			});
-		}
-	},
-	{ deep: true }
-);
-
-// Инициализация при изменении данных из store
-watch(
-	() => apartmentsStore.priceRange,
-	newPriceRange => {
-		if (newPriceRange[0] && newPriceRange[1]) {
-			isUpdatingFromStore = true;
-			priceRange.value = [newPriceRange[0], newPriceRange[1]];
-			nextTick(() => {
-				isUpdatingFromStore = false;
-			});
-		}
+watch(priceRange, () => {
+	if (!isUpdatingFromStore) {
+		apartmentsStore.setDraftFilters({
+			priceRange: [...priceRange.value] as [number, number],
+		});
 	}
-	// убираем immediate: true чтобы не было вызова при инициализации
-);
+}, { deep: true });
 
-watch(
-	() => apartmentsStore.areaRange,
-	newAreaRange => {
-		if (newAreaRange[0] && newAreaRange[1]) {
-			isUpdatingFromStore = true;
-			areaRange.value = [newAreaRange[0], newAreaRange[1]];
-			nextTick(() => {
-				isUpdatingFromStore = false;
-			});
-		}
+watch(areaRange, () => {
+	if (!isUpdatingFromStore) {
+		apartmentsStore.setDraftFilters({
+			areaRange: [...areaRange.value] as [number, number],
+		});
 	}
-	// убираем immediate: true чтобы не было вызова при инициализации
-);
+}, { deep: true });
 
-// Инициализация значений при монтировании компонента
-onMounted(() => {
-	apartmentsStore.init();
+watch(() => apartmentsStore.priceRange, newPriceRange => {
+	if (newPriceRange[0] && newPriceRange[1]) {
+		isUpdatingFromStore = true;
+		priceRange.value = [newPriceRange[0], newPriceRange[1]];
+		isUpdatingFromStore = false;
+	}
+});
+
+watch(() => apartmentsStore.areaRange, newAreaRange => {
+	if (newAreaRange[0] && newAreaRange[1]) {
+		isUpdatingFromStore = true;
+		areaRange.value = [newAreaRange[0], newAreaRange[1]];
+		isUpdatingFromStore = false;
+	}
 });
 </script>
 
