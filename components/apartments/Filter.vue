@@ -1,23 +1,19 @@
 <template>
-	<aside
-		class="filter-optimized"
-		:class="{ 'filter-optimized--filtering': store.isFiltering }"
-	>
-		<div class="filter-optimized__header">
-			<h2 class="filter-optimized__title">Фильтры</h2>
+	<aside class="filter" :class="{ 'filter--filtering': store.isFiltering }">
+		<div class="filter__header">
+			<h2 class="filter__title">Фильтры</h2>
 			<Transition name="spinner-fade">
 				<UIFeedbackSpinner
 					v-if="store.isFiltering"
 					size="sm"
-					class="filter-optimized__spinner"
+					class="filter__spinner"
 				/>
 			</Transition>
 		</div>
 
-
-		<section class="filter-optimized__section">
-			<h3 class="filter-optimized__section-title">Количество комнат</h3>
-			<div class="filter-optimized__rooms">
+		<section class="filter__section">
+			<h3 class="filter__section-title">Количество комнат</h3>
+			<div class="filter__rooms">
 				<UIControlsRoomButton
 					v-for="room in allPossibleRooms"
 					:key="room"
@@ -29,18 +25,14 @@
 			</div>
 		</section>
 
-		<section class="filter-optimized__section">
-			<h3 class="filter-optimized__section-title">Стоимость квартиры, ₽</h3>
-			<div class="filter-optimized__range-labels">
-				<span
-					class="filter-optimized__range-label filter-optimized__range-label--min"
-				>
-					от {{ formatPrice(priceRange[0]) }}
+		<section class="filter__section">
+			<h3 class="filter__section-title">Стоимость квартиры, ₽</h3>
+			<div class="filter__range-labels">
+				<span class="filter__range-label filter__range-label--min">
+					<span class="from-to">от </span> {{ formatPrice(priceRange[0]) }}
 				</span>
-				<span
-					class="filter-optimized__range-label filter-optimized__range-label--max"
-				>
-					до {{ formatPrice(priceRange[1]) }}
+				<span class="filter__range-label filter__range-label--max">
+					<span class="from-to">до </span> {{ formatPrice(priceRange[1]) }}
 				</span>
 			</div>
 			<UIControlsRangeSlider
@@ -53,18 +45,14 @@
 			/>
 		</section>
 
-		<section class="filter-optimized__section">
-			<h3 class="filter-optimized__section-title">Площадь, м²</h3>
-			<div class="filter-optimized__range-labels">
-				<span
-					class="filter-optimized__range-label filter-optimized__range-label--min"
-				>
-					от {{ areaRange[0] }}
+		<section class="filter__section">
+			<h3 class="filter__section-title">Площадь, м²</h3>
+			<div class="filter__range-labels">
+				<span class="filter__range-label filter__range-label--min">
+					<span class="from-to">от </span> {{ areaRange[0] }}
 				</span>
-				<span
-					class="filter-optimized__range-label filter-optimized__range-label--max"
-				>
-					до {{ areaRange[1] }}
+				<span class="filter__range-label filter__range-label--max">
+					<span class="from-to">до </span> {{ areaRange[1] }}
 				</span>
 			</div>
 			<UIControlsRangeSlider
@@ -77,13 +65,13 @@
 			/>
 		</section>
 
-		<div class="filter-optimized__actions">
+		<div class="filter__actions">
 			<UIControlsButton
 				@click="resetAllFilters"
 				variant="outline"
 				size="md"
 				:disabled="store.isFiltering || store.activeFiltersCount === 0"
-				class="filter-optimized__reset"
+				class="filter__reset"
 			>
 				Сбросить фильтры
 			</UIControlsButton>
@@ -114,9 +102,7 @@ const areaRange = ref<[number, number]>([
 	props.store.draftFilters.areaRange[1] || props.store.areaRange[1] || 123,
 ]);
 
-const allPossibleRooms = [1, 2, 3, 4]; 
-
-
+const allPossibleRooms = [1, 2, 3, 4];
 
 const minPrice = computed(() => props.store.priceRange[0] || 5500000);
 const maxPrice = computed(() => props.store.priceRange[1] || 18900000);
@@ -130,10 +116,8 @@ const areaStep = computed(() =>
 	Math.max(1, Math.round((maxArea.value - minArea.value) / 100))
 );
 
-
 const formatPrice = (price: number): string =>
 	new Intl.NumberFormat('ru-RU').format(price);
-
 
 const toggleRoom = async (room: number) => {
 	if (props.store.isFiltering) return;
@@ -239,7 +223,7 @@ watch(
 <style lang="scss" scoped>
 @use '~/assets/scss/variables' as *;
 
-.filter-optimized {
+.filter {
 	background: $background-primary;
 	border-radius: $border-radius-lg;
 	padding: $spacing-lg;
@@ -283,7 +267,7 @@ watch(
 	}
 
 	&__section-title {
-		font-size: $font-size-base;
+		font-size: $font-size-sm;
 		font-weight: $font-weight-regular;
 		color: $text-primary;
 		margin: 0 0 $spacing-md 0;
@@ -316,17 +300,12 @@ watch(
 	}
 
 	&__range-label {
-		font-size: $font-size-sm;
-		color: $text-secondary;
+		font-size: $font-size-base;
+		color: $text-primary;
 		font-family: $font-family;
-
-		&--min {
-			color: $accent;
-		}
-
-		&--max {
-			color: $accent;
-		}
+    .from-to{
+      color: $text-secondary;
+    }
 	}
 
 	&__actions {
@@ -351,7 +330,7 @@ watch(
 }
 
 @include mobile {
-	.filter-optimized {
+	.filter {
 		padding: $spacing-md;
 
 		&__section {
@@ -369,7 +348,7 @@ watch(
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.filter-optimized {
+	.filter {
 		transition: none;
 	}
 
@@ -380,7 +359,7 @@ watch(
 }
 
 @media (prefers-contrast: high) {
-	.filter-optimized {
+	.filter {
 		border: 2px solid $text-primary;
 	}
 }

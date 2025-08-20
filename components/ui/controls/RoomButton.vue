@@ -53,7 +53,6 @@ const handleClick = () => {
 @use '~/assets/scss/variables' as *;
 
 .room-button {
-	flex: 1;
 	width: 44px;
 	border: 1px solid $accent;
 	border-radius: 50%;

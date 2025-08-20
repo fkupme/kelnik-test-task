@@ -67,6 +67,9 @@ body {
   @include tablet {
 		padding: 0 $container-padding-tablet;
 	}
+  @include tablet-sm {
+		padding: 0 $container-padding-tablet-sm;
+	}
 	@include mobile {
 		padding: 0 $container-padding-mobile;
 	}

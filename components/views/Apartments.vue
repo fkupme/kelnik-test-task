@@ -1,35 +1,31 @@
 <template>
-	<div class="apartments-view-optimized">
-		<header class="apartments-view-optimized__header">
-			<h1
-				class="apartments-view-optimized__title apartments-view-optimized__title--top"
-			>
+	<div class="apartments-view">
+		<header class="apartments-view__header">
+			<h1 class="apartments-view__title apartments-view__title--top">
 				Квартиры
 			</h1>
 
 			<UIMobileFilterButton
-				class="apartments-view-optimized__mobile-filter"
+				class="apartments-view-mobile-filter"
 				:active-filters-count="apartmentsStore.activeFiltersCount"
 				:disabled="apartmentsStore.isLoading"
 				@click="openMobileFilter"
 			/>
 		</header>
 
-		<div class="apartments-view-optimized__content">
+		<div class="apartments-view-content">
 			<ApartmentFilter
-				class="apartments-view-optimized__filter"
+				class="apartments-view-filter"
 				:store="apartmentsStore"
 			/>
 
-			<main class="apartments-view-optimized__main">
-				<h2
-					class="apartments-view-optimized__title apartments-view-optimized__title--section"
-				>
+			<main class="apartments-view__main">
+				<h2 class="apartments-view__title apartments-view__title--section">
 					Квартиры
 				</h2>
 
 				<UISortHeaders
-					class="apartments-view-optimized__sort-headers"
+					class="apartments-view__sort-headers"
 					:headers="sortHeaders"
 					:sort-field="apartmentsStore.sort.field"
 					:sort-direction="apartmentsStore.sort.direction"
@@ -37,29 +33,27 @@
 					@sort-change="handleSortChange"
 				/>
 
-				<div class="apartments-view-optimized__list-container">
+				<div class="apartments-view__list-container">
 					<div
 						v-if="
 							apartmentsStore.isLoading &&
 							apartmentsStore.visibleApartments.length === 0
 						"
-						class="apartments-view-optimized__loading"
+						class="apartments-view__loading"
 					>
 						<UIFeedbackSpinner size="lg" />
-						<h3 class="apartments-view-optimized__loading-title">
-							Загрузка квартир
-						</h3>
-						<p class="apartments-view-optimized__loading-text">
+						<h3 class="apartments-view__loading-title">Загрузка квартир</h3>
+						<p class="apartments-view__loading-text">
 							Подождите, мы получаем актуальную информацию о квартирах...
 						</p>
 					</div>
 
 					<div
 						v-else-if="apartmentsStore.error"
-						class="apartments-view-optimized__error"
+						class="apartments-view__error"
 					>
 						<svg
-							class="apartments-view-optimized__error-icon"
+							class="apartments-view__error-icon"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="currentColor"
@@ -68,10 +62,8 @@
 							<line x1="12" y1="8" x2="12" y2="12" />
 							<line x1="12" y1="16" x2="12.01" y2="16" />
 						</svg>
-						<h3 class="apartments-view-optimized__error-title">
-							Ошибка загрузки
-						</h3>
-						<p class="apartments-view-optimized__error-text">
+						<h3 class="apartments-view__error-title">Ошибка загрузки</h3>
+						<p class="apartments-view__error-text">
 							{{ apartmentsStore.error }}
 						</p>
 						<UIControlsButton @click="retryLoad" variant="primary" size="md">
@@ -84,10 +76,10 @@
 							!apartmentsStore.isLoading &&
 							apartmentsStore.visibleApartments.length === 0
 						"
-						class="apartments-view-optimized__empty"
+						class="apartments-view__empty"
 					>
 						<svg
-							class="apartments-view-optimized__empty-icon"
+							class="apartments-view__empty-icon"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="currentColor"
@@ -99,14 +91,12 @@
 								d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
 							/>
 						</svg>
-						<h3 class="apartments-view-optimized__empty-title">
-							Квартиры не найдены
-						</h3>
-						<p class="apartments-view-optimized__empty-text">
+						<h3 class="apartments-view__empty-title">Квартиры не найдены</h3>
+						<p class="apartments-view__empty-text">
 							По заданным критериям поиска квартиры не найдены. Попробуйте
 							изменить параметры фильтрации.
 						</p>
-						<div class="apartments-view-optimized__empty-actions">
+						<div class="apartments-view__empty-actions">
 							<UIControlsButton
 								@click="apartmentsStore.resetFilters"
 								variant="primary"
@@ -124,7 +114,7 @@
 						v-else
 						:apartments="[...apartmentsStore.visibleApartments]"
 						:store="apartmentsStore"
-						class="apartments-view-optimized__list"
+						class="apartments-view__list"
 					/>
 				</div>
 			</main>
@@ -141,14 +131,13 @@
 <script setup lang="ts">
 declare const useSeoMeta: (meta: Record<string, any>) => void;
 
-
 const apartmentsStore = useApartmentsStore();
 
 const showMobileFilter = ref(false);
 
 const sortHeaders = computed(() => [
 	{ key: 'plan', label: 'Планировка', sortable: false },
-	{ key: 'name', label: 'Квартира', sortable: true },
+	{ key: 'name', label: 'Квартира', sortable: false },
 	{ key: 'area', label: 'S, м²', sortable: true },
 	{ key: 'floor', label: 'Этаж', sortable: true },
 	{ key: 'price', label: 'Цена, ₽', sortable: true },
@@ -183,7 +172,7 @@ useSeoMeta({
 <style lang="scss" scoped>
 @use '~/assets/scss/variables' as *;
 
-.apartments-view-optimized {
+.apartments-view {
 	&__header {
 		margin-bottom: $spacing-xxl;
 		display: flex;
@@ -227,12 +216,12 @@ useSeoMeta({
 		}
 	}
 
-	&__mobile-filter {
+	&-mobile-filter {
 		flex-shrink: 0;
 		max-width: 120px;
 	}
 
-	&__content {
+	&-content {
 		display: grid;
 		grid-template-columns: 1fr 400px;
 		grid-template-rows: 1fr;
@@ -245,12 +234,17 @@ useSeoMeta({
 			gap: $spacing-lg;
 		}
 
+		@include tablet-sm {
+			grid-template-columns: 1fr 260px;
+			gap: $spacing-lg;
+		}
+
 		@include mobile {
 			display: block;
 		}
 	}
 
-	&__filter {
+	&-filter {
 		grid-row: 1;
 		grid-column: 2;
 		position: sticky;
@@ -272,10 +266,9 @@ useSeoMeta({
 	}
 
 	&__sort-headers {
-		margin-bottom: $spacing-lg;
 	}
 
-	&__list-container {
+	&__listcontainer {
 		position: relative;
 		min-height: 400px;
 	}
@@ -389,7 +382,7 @@ useSeoMeta({
 }
 
 @include mobile {
-	.apartments-view-optimized {
+	.apartments-view {
 		&__loading,
 		&__error,
 		&__empty {
@@ -416,7 +409,7 @@ useSeoMeta({
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.apartments-view-optimized {
+	.apartments-view {
 		&__list {
 			animation: none;
 		}
@@ -432,8 +425,8 @@ useSeoMeta({
 }
 
 @media print {
-	.apartments-view-optimized {
-		&__mobile-filter,
+	.apartments-view {
+		&-mobile-filter,
 		&__sort-headers {
 			display: none;
 		}

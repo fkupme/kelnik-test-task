@@ -38,6 +38,7 @@ interface Props {
 	hideTextOnLoading?: boolean;
 	type?: 'button' | 'submit' | 'reset';
 	fullWidth?: boolean;
+  rounded?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -63,6 +64,7 @@ const buttonClasses = computed(() => {
 			'button--disabled': props.disabled,
 			'button--loading': props.loading,
 			'button--full-width': props.fullWidth,
+      'button--rounded': props.rounded
 		},
 	];
 });
@@ -191,7 +193,9 @@ const handleClick = (event: MouseEvent) => {
 			border-color: $accent;
 		}
 	}
-
+  &--rounded{
+    border-radius: 999px;
+  }
 	&--disabled {
 		opacity: 0.5;
 		cursor: not-allowed;

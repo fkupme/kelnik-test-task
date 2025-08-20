@@ -10,7 +10,7 @@ $accent: #3eb57c;
 $text-primary: #0b1739;
 $text-secondary: rgba(#0b1739, 0.4);
 
-// Legacy colors for backward compatibility
+// colors
 $primary-color: $accent;
 $text-color: $text-primary;
 $text-light: $text-secondary;
@@ -44,19 +44,21 @@ $spacing-xs: 8px;
 $spacing-sm: 12px;
 $spacing-md: 16px;
 $spacing-lg: 24px;
-$spacing-xl: 32px;
-$spacing-xxl: 48px;
+$spacing-xl: 28px;
+$spacing-xxl: 80px;
 
 // Layout
 $container-max-width: 1440px;
 $container-padding: 80px;
 $container-padding-tablet: 54px;
+$container-padding-tablet-sm: 30px;
 $container-padding-mobile: 10px;
 
 // Breakpoints
-$breakpoint-mobile: 640px; // Mobile devices
-$breakpoint-tablet: 960px; // Tablets and medium screens
-$breakpoint-desktop: 1440px; // Desktop and large screens
+$breakpoint-mobile: 640px; 
+$breakpoint-tablet: 960px;
+$breakpoint-tablet-sm: 768px;
+$breakpoint-desktop: 1440px;
 
 // Z-index
 $z-header: 100;
@@ -75,6 +77,12 @@ $border-radius-lg: 10px;
 
 @mixin mobile {
 	@media (max-width: #{$breakpoint-mobile}) {
+		@content;
+	}
+}
+
+@mixin tablet-sm {
+	@media (max-width: #{$breakpoint-tablet-sm}) {
 		@content;
 	}
 }

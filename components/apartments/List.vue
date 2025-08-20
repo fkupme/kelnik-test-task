@@ -1,10 +1,10 @@
 <template>
-	<div class="apartment-list-optimized">
-		<div class="apartment-list-optimized__container">
+	<div class="apartment-list">
+		<div class="apartment-list__container">
 			<TransitionGroup
 				name="apartment-fade"
 				tag="div"
-				class="apartment-list-optimized__grid"
+				class="apartment-list__grid"
 				:css="true"
 				appear
 			>
@@ -12,17 +12,18 @@
 					v-for="apartment in apartments"
 					:key="apartment.id"
 					:apartment="apartment"
-					class="apartment-list-optimized__item"
+					class="apartment-list__item"
 				/>
 			</TransitionGroup>
 		</div>
 
-		<div v-if="store.pagination.hasMore" class="apartment-list-optimized__load-more">
+		<div v-if="store.pagination.hasMore" class="apartment-list__load-more">
 			<UIControlsButton
 				:loading="store.isAppending"
 				@click="loadMore"
 				variant="outline"
-				size="large"
+				size="lg"
+        rounded
 				:disabled="store.isLoading"
 			>
 				Показать ещё {{ store.pagination.itemsPerPage }}
@@ -31,36 +32,39 @@
 
 		<div
 			v-if="store.isLoading && apartments.length === 0"
-			class="apartment-list-optimized__loading"
+			class="apartment-list__loading"
 		>
 			<UIFeedbackSpinner size="lg" />
-			<p class="apartment-list-optimized__loading-text">Загрузка квартир...</p>
+			<p class="apartment-list__loading-text">Загрузка квартир...</p>
 		</div>
 
-		<div
-			v-if="store.isFiltering"
-			class="apartment-list-optimized__filtering"
-		>
+		<div v-if="store.isFiltering" class="apartment-list__filtering">
 			<UIFeedbackSpinner size="sm" />
-			<p class="apartment-list-optimized__filtering-text">Применение фильтров...</p>
+			<p class="apartment-list__filtering-text">Применение фильтров...</p>
 		</div>
 
 		<div
 			v-if="!store.isLoading && !store.isFiltering && apartments.length === 0"
-			class="apartment-list-optimized__empty"
+			class="apartment-list__empty"
 		>
-			<svg class="apartment-list-optimized__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+			<svg
+				class="apartment-list__empty-icon"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+				/>
 			</svg>
-			<h3 class="apartment-list-optimized__empty-title">Квартиры не найдены</h3>
-			<p class="apartment-list-optimized__empty-description">
+			<h3 class="apartment-list__empty-title">Квартиры не найдены</h3>
+			<p class="apartment-list__empty-description">
 				Попробуйте изменить параметры фильтрации или сбросить все фильтры
 			</p>
-			<UIControlsButton
-				@click="store.resetFilters"
-				variant="primary"
-				size="md"
-			>
+			<UIControlsButton @click="store.resetFilters" variant="primary" size="md">
 				Сбросить фильтры
 			</UIControlsButton>
 		</div>
@@ -73,7 +77,7 @@ import type { Apartment } from '../../types';
 
 interface Props {
 	apartments: Apartment[];
-	store: any; 
+	store: any;
 }
 
 const props = defineProps<Props>();
@@ -85,7 +89,11 @@ watchEffect(() => {
 });
 
 const loadMore = () => {
-	if (!props.store.isLoading && !props.store.isAppending && props.store.pagination.hasMore) {
+	if (
+		!props.store.isLoading &&
+		!props.store.isAppending &&
+		props.store.pagination.hasMore
+	) {
 		props.store.loadMore();
 	}
 };
@@ -94,7 +102,7 @@ const loadMore = () => {
 <style scoped lang="scss">
 @use '~/assets/scss/variables' as *;
 
-.apartment-list-optimized {
+.apartment-list {
 	position: relative;
 
 	&__container {
@@ -105,7 +113,7 @@ const loadMore = () => {
 		display: flex;
 		flex-direction: column;
 		gap: 0;
-		
+
 		@include tablet {
 			gap: $spacing-md;
 		}
@@ -113,7 +121,7 @@ const loadMore = () => {
 
 	&__item {
 		will-change: transform, opacity;
-		
+
 		&:not(:last-child) {
 			border-bottom: 1px solid $border-color;
 		}
@@ -121,9 +129,10 @@ const loadMore = () => {
 
 	&__load-more {
 		display: flex;
-		justify-content: center;
-		margin-top: $spacing-xl;
 		padding: $spacing-lg 0;
+    @include tablet{
+      padding: $spacing-md 0;
+    }
 	}
 
 	&__loading,
@@ -215,7 +224,7 @@ const loadMore = () => {
 }
 
 @include mobile {
-	.apartment-list-optimized {
+	.apartment-list {
 		&__loading,
 		&__filtering,
 		&__empty {
@@ -241,7 +250,7 @@ const loadMore = () => {
 }
 
 @include tablet {
-	.apartment-list-optimized {
+	.apartment-list {
 		&__grid {
 			gap: $spacing-sm;
 		}
@@ -257,7 +266,7 @@ const loadMore = () => {
 }
 
 @media (prefers-color-scheme: dark) {
-	.apartment-list-optimized {
+	.apartment-list {
 		&__filtering {
 			background: rgba(240, 242, 245, 0.8);
 		}
