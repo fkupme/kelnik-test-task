@@ -2,13 +2,6 @@
 	<aside class="filter" :class="{ 'filter--filtering': store.isFiltering }">
 		<div class="filter__header">
 			<h2 class="filter__title">Фильтры</h2>
-			<Transition name="spinner-fade">
-				<UIFeedbackSpinner
-					v-if="store.isFiltering"
-					size="sm"
-					class="filter__spinner"
-				/>
-			</Transition>
 		</div>
 
 		<section class="filter__section">
